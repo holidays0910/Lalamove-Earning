@@ -561,7 +561,7 @@
                         photoUrl: '',
                         isOnline: true,
                         lastSeen: serverTimestamp()
-                    });
+                    }, { merge: true });
                     window.showAlert('Account successfully created!');
                 }
             } catch (err) {
@@ -596,7 +596,7 @@
                         photoUrl: res.user.photoURL || '',
                         isOnline: true,
                         lastSeen: serverTimestamp()
-                    });
+                    }, { merge: true });
                 }
             } catch (err) {
                 window.showAlert(err.message, true);
@@ -605,10 +605,10 @@
 
         window.handleLogout = async function() {
             if (currentUser) {
-                await updateDoc(doc(db, 'users', currentUser.uid), {
+                await setDoc(doc(db, 'users', currentUser.uid), {
                     isOnline: false,
                     lastSeen: serverTimestamp()
-                }).catch(() => {});
+                }, { merge: true }).catch(() => {});
             }
             signOut(auth);
         };
@@ -651,13 +651,14 @@
                 document.getElementById('appDashboard').classList.remove('hidden');
                 document.getElementById('userEmailDisplay').innerText = user.email;
 
-                // Naka-hide muna ang Admin Button By Default
+                // Hide Admin button by default
                 document.getElementById('navAdminBtn').classList.add('hidden');
 
-                await updateDoc(doc(db, 'users', user.uid), {
+                await setDoc(doc(db, 'users', user.uid), {
+                    email: user.email,
                     isOnline: true,
                     lastSeen: serverTimestamp()
-                }).catch(() => {});
+                }, { merge: true }).catch(() => {});
 
                 const userSnap = await getDoc(doc(db, 'users', user.uid));
                 if (userSnap.exists()) {
@@ -673,7 +674,6 @@
                     }
                 }
 
-                // EKSAKTONG CHECK: Lalabas lang ang button kung 'admin' ang role sa DB
                 if (currentUserRole === 'admin') {
                     document.getElementById('navAdminBtn').classList.remove('hidden');
                     listenToAllUsersForAdmin();
@@ -724,17 +724,30 @@
             reader.readAsDataURL(file);
         };
 
+        // Profile Save Handler (Updated with setDoc merge)
         window.saveUserProfile = async function() {
-            if (!currentUser) return;
+            if (!currentUser) return alert('Kailangan mong mag-login muna.');
+
+            const fullName = document.getElementById('profileFullName').value.trim();
+            const phone = document.getElementById('profilePhone').value.trim();
+            const dob = document.getElementById('profileDob').value;
+
             const payload = {
-                fullName: document.getElementById('profileFullName').value.trim(),
-                phone: document.getElementById('profilePhone').value.trim(),
-                dob: document.getElementById('profileDob').value,
-                photoUrl: profileBase64
+                email: currentUser.email,
+                fullName: fullName,
+                phone: phone,
+                dob: dob,
+                photoUrl: profileBase64,
+                updatedAt: new Date().toISOString()
             };
 
-            await updateDoc(doc(db, 'users', currentUser.uid), payload);
-            alert('Matagumpay na na-update ang iyong Profile!');
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid), payload, { merge: true });
+                alert('Matagumpay na na-update at nai-save ang iyong Profile!');
+            } catch (error) {
+                console.error("Profile save error:", error);
+                alert('Nagka-error sa pag-save ng profile: ' + error.message);
+            }
         };
 
         // Listeners
