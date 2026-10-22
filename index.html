@@ -262,8 +262,17 @@
                             <button id="btnFilterMonth" onclick="setFilter('month')" class="px-3 py-1.5 rounded-lg text-slate-400">Buwan</button>
                             <button id="btnFilterAll" onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-slate-400">Lahat</button>
                         </div>
+                        
+                        <!-- Month Picker -->
                         <div id="monthPickerContainer" class="hidden">
                             <input type="month" id="monthPicker" onchange="renderDashboard()" class="p-1.5 rounded-xl input-style text-xs">
+                        </div>
+
+                        <!-- Weekly Dropdown Selector -->
+                        <div id="weekPickerContainer" class="hidden">
+                            <select id="weekPicker" onchange="renderDashboard()" class="p-1.5 rounded-xl input-style text-xs bg-slate-800 text-orange-400 font-semibold border border-slate-700">
+                                <option value="current">Kasalukuyang Linggo (This Week)</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -692,11 +701,9 @@
                 currentUser = user;
                 currentUserRole = 'user'; // Explicitly reset to user role first
 
-                // Siguraduhing tago muna ang Admin Button at Calculator View lang ang naka-focus
                 document.getElementById('navAdminBtn').classList.add('hidden');
                 window.switchTab('calc');
 
-                // Laging ibalik sa tamang lokal na petsa ngayong araw
                 document.getElementById('tripDate').value = getTodayString();
 
                 resetProfileUI();
@@ -715,7 +722,6 @@
                 if (userSnap.exists()) {
                     const data = userSnap.data();
                     
-                    // Kunin ang tunay na role mula sa database
                     currentUserRole = data.role || 'user';
 
                     document.getElementById('profileFullName').value = data.fullName || '';
@@ -728,7 +734,6 @@
                     }
                 }
 
-                // Lalabas LAMANG ang Admin Panel button kung saktong 'admin' ang role sa database document
                 if (currentUserRole === 'admin') {
                     document.getElementById('navAdminBtn').classList.remove('hidden');
                     listenToAllUsersForAdmin();
@@ -817,6 +822,7 @@
                 snapshot.forEach(docSnap => {
                     tripsData[docSnap.id] = docSnap.data();
                 });
+                populateWeeklyDropdown();
                 window.onDateChange();
                 window.renderDashboard();
             });
@@ -1007,10 +1013,10 @@
                 await setDoc(doc(db, 'users', currentUser.uid, 'trips', selectedDate), payload);
             }
 
-            // In-App Alert Confirmation Notice
             showCalcAlert('Matagumpay na nai-save ang biyahe para sa ' + selectedDate + '!');
 
             resetFormInputs();
+            populateWeeklyDropdown();
             window.renderDashboard();
         };
 
@@ -1022,6 +1028,7 @@
                     if (currentUser) {
                         await deleteDoc(doc(db, 'users', currentUser.uid, 'trips', selectedDate));
                     }
+                    populateWeeklyDropdown();
                     window.onDateChange();
                     window.renderDashboard();
                 }
@@ -1039,6 +1046,7 @@
                 if (document.getElementById('tripDate').value === dateStr) {
                     window.onDateChange();
                 }
+                populateWeeklyDropdown();
                 window.renderDashboard();
             }
         };
@@ -1051,6 +1059,7 @@
             document.getElementById('btnFilterAll').className = filter === 'all' ? 'px-3 py-1.5 rounded-lg bg-orange-500 font-bold text-white' : 'px-3 py-1.5 rounded-lg text-slate-400';
             
             document.getElementById('monthPickerContainer').classList.toggle('hidden', filter !== 'month');
+            document.getElementById('weekPickerContainer').classList.toggle('hidden', filter !== 'week');
             document.getElementById('weeklyReportContainer').classList.toggle('hidden', filter !== 'week');
             
             window.renderDashboard();
@@ -1063,9 +1072,47 @@
             return new Date(date.setDate(diff));
         }
 
+        // Awtomatikong mag-populate ng Weekly Options base sa mga totoong may data
+        function populateWeeklyDropdown() {
+            const select = document.getElementById('weekPicker');
+            const savedValue = select.value;
+            select.innerHTML = '';
+
+            const weeklyMap = {};
+            
+            // Isama palagi ang kasalukuyang linggo (This Week)
+            const currentMon = getMonday(new Date()).toISOString().split('T')[0];
+            weeklyMap[currentMon] = true;
+
+            Object.keys(tripsData).forEach(dateStr => {
+                const mon = getMonday(new Date(dateStr)).toISOString().split('T')[0];
+                weeklyMap[mon] = true;
+            });
+
+            const sortedMondays = Object.keys(weeklyMap).sort().reverse();
+
+            sortedMondays.forEach(monStr => {
+                const monDate = new Date(monStr);
+                const sunDate = new Date(monDate);
+                sunDate.setDate(monDate.getDate() + 6);
+
+                const label = `${monDate.toLocaleDateString('tl-PH', { month: 'short', day: 'numeric' })} - ${sunDate.toLocaleDateString('tl-PH', { month: 'short', day: 'numeric' })}`;
+                
+                const option = document.createElement('option');
+                option.value = monStr;
+                option.innerText = (monStr === currentMon) ? `Kasalukuyang Linggo (${label})` : label;
+                select.appendChild(option);
+            });
+
+            if (savedValue && sortedMondays.includes(savedValue)) {
+                select.value = savedValue;
+            } else {
+                select.value = currentMon;
+            }
+        }
+
         window.renderDashboard = function() {
             const selectedDateStr = document.getElementById('tripDate').value;
-            const selectedDate = new Date(selectedDateStr);
             const selectedMonthStr = document.getElementById('monthPicker').value;
 
             let filteredDates = Object.keys(tripsData);
@@ -1073,7 +1120,8 @@
             if (currentFilter === 'day') {
                 filteredDates = filteredDates.filter(d => d === selectedDateStr);
             } else if (currentFilter === 'week') {
-                const monday = getMonday(selectedDate);
+                const chosenMonStr = document.getElementById('weekPicker').value || getMonday(new Date()).toISOString().split('T')[0];
+                const monday = new Date(chosenMonStr);
                 const sunday = new Date(monday);
                 sunday.setDate(monday.getDate() + 6);
 
