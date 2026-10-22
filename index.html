@@ -6,10 +6,6 @@
     <title>Lalamove & Rider Earnings Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
@@ -26,68 +22,118 @@
                 <i class="fa-solid fa-motorcycle fa-2x"></i>
             </div>
             <h1 class="text-2xl font-bold text-orange-500">Rider Partner App</h1>
-            <p class="text-slate-400 text-sm">Login o Mag-register para ma-save ang iyong kita sa Cloud DB</p>
+            <p class="text-slate-400 text-sm">Login o Mag-register para ma-save ang iyong data sa Cloud</p>
         </div>
 
-        <!-- Notification Message -->
         <div id="authAlert" class="hidden mb-4 p-3 rounded-lg text-sm font-medium text-center"></div>
 
-        <!-- Login / Register Form -->
-        <div id="authForms">
-            <div class="mb-4">
-                <label class="block text-slate-300 text-sm font-bold mb-1">Email Address</label>
-                <input type="email" id="authEmail" class="w-full p-3 rounded-xl input-style" placeholder="halimbawa@email.com">
-            </div>
-            <div id="passwordGroup" class="mb-4">
-                <label class="block text-slate-300 text-sm font-bold mb-1">Password</label>
-                <input type="password" id="authPassword" class="w-full p-3 rounded-xl input-style" placeholder="••••••••">
-            </div>
-
-            <div class="space-y-3">
-                <button id="btnLogin" onclick="handleLogin()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-lg transition">
-                    <i class="fa-solid fa-right-to-bracket mr-2"></i> Mag-login
-                </button>
-                <button id="btnRegister" onclick="handleRegister()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition">
-                    <i class="fa-solid fa-user-plus mr-2"></i> Gumawa ng Account
-                </button>
-                <button id="btnForgot" onclick="toggleForgotPasswordView(true)" class="w-full text-xs text-orange-400 hover:underline pt-2">
-                    Nakalimutan ang Password?
-                </button>
-            </div>
+        <!-- Login / Register Switch Tabs -->
+        <div class="flex bg-slate-800 p-1 rounded-xl mb-6 border border-slate-700">
+            <button id="tabLoginBtn" onclick="switchAuthMode('login')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-orange-500 text-white transition">Mag-login</button>
+            <button id="tabRegisterBtn" onclick="switchAuthMode('register')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 transition">Mag-register</button>
         </div>
 
-        <!-- Forgot Password Form -->
-        <div id="forgotPasswordForm" class="hidden">
-            <p class="text-slate-300 text-sm mb-4">I-enter ang iyong registered email. Padadalhan ka namin ng password reset link sa iyong email.</p>
-            <div class="mb-4">
-                <label class="block text-slate-300 text-sm font-bold mb-1">Email Address</label>
-                <input type="email" id="resetEmail" class="w-full p-3 rounded-xl input-style" placeholder="halimbawa@email.com">
+        <!-- Auth Form Inputs -->
+        <div class="space-y-4">
+            <div>
+                <label class="block text-slate-300 text-xs font-bold mb-1">Email Address</label>
+                <input type="email" id="authEmail" class="w-full p-3 rounded-xl input-style text-sm" placeholder="halimbawa@email.com">
             </div>
-            <button onclick="handlePasswordReset()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl mb-3">
+
+            <!-- Password with Eye Toggle -->
+            <div>
+                <label class="block text-slate-300 text-xs font-bold mb-1">Password</label>
+                <div class="relative">
+                    <input type="password" id="authPassword" class="w-full p-3 pr-10 rounded-xl input-style text-sm" placeholder="••••••••">
+                    <button type="button" onclick="togglePasswordVisibility('authPassword', 'eyeIcon1')" class="absolute right-3 top-3.5 text-slate-400 hover:text-white">
+                        <i id="eyeIcon1" class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <span id="passHint" class="hidden text-[10px] text-slate-400 mt-1 block">Minimum na 6 characters.</span>
+            </div>
+
+            <!-- Confirm Password (Register Only) -->
+            <div id="confirmPasswordGroup" class="hidden">
+                <label class="block text-slate-300 text-xs font-bold mb-1">Kumpirmahin ang Password</label>
+                <div class="relative">
+                    <input type="password" id="authConfirmPassword" class="w-full p-3 pr-10 rounded-xl input-style text-sm" placeholder="••••••••">
+                    <button type="button" onclick="togglePasswordVisibility('authConfirmPassword', 'eyeIcon2')" class="absolute right-3 top-3.5 text-slate-400 hover:text-white">
+                        <i id="eyeIcon2" class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Remember Me & Forgot Password -->
+            <div id="rememberMeGroup" class="flex items-center justify-between text-xs">
+                <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                    <input type="checkbox" id="rememberMe" class="rounded bg-slate-700 border-slate-600 text-orange-500 focus:ring-orange-500">
+                    <span>Tandaan ako (Remember Me)</span>
+                </label>
+                <button onclick="toggleForgotPasswordView(true)" class="text-orange-400 hover:underline">Nakalimutan ang Password?</button>
+            </div>
+
+            <button id="authSubmitBtn" onclick="handleAuthSubmit()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-lg transition">
+                Mag-login
+            </button>
+
+            <div id="dividerAuth" class="relative flex py-2 items-center">
+                <div class="flex-grow border-t border-slate-700"></div>
+                <span class="flex-shrink mx-4 text-slate-500 text-xs">o kaya</span>
+                <div class="flex-grow border-t border-slate-700"></div>
+            </div>
+
+            <button id="googleAuthBtn" onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-3 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm">
+                <i class="fa-brands fa-google text-red-500"></i> Mag-sign in gamit ang Google
+            </button>
+        </div>
+
+        <!-- Forgot Password Modal -->
+        <div id="forgotPasswordForm" class="hidden mt-4 pt-4 border-t border-slate-700">
+            <p class="text-slate-300 text-xs mb-3">I-enter ang iyong registered email para padalhan ka ng password reset link.</p>
+            <div class="mb-3">
+                <input type="email" id="resetEmail" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="halimbawa@email.com">
+            </div>
+            <button onclick="handlePasswordReset()" class="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-2.5 rounded-xl mb-2">
                 Ipadala ang Reset Link
             </button>
-            <button onclick="toggleForgotPasswordView(false)" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm py-2 rounded-xl">
+            <button onclick="toggleForgotPasswordView(false)" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs py-2 rounded-xl">
                 Bumalik sa Login
             </button>
         </div>
     </div>
 
-    <!-- Main Dashboard -->
-    <div id="appDashboard" class="hidden max-w-4xl mx-auto px-4 pt-6">
-        <!-- Header -->
+    <!-- Main App Container -->
+    <div id="appDashboard" class="hidden max-w-5xl mx-auto px-4 pt-6">
+        <!-- Navigation Header -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center glass-card p-4 rounded-2xl mb-6 gap-4">
-            <div>
-                <h1 class="text-xl font-bold text-orange-500 flex items-center gap-2">
-                    <i class="fa-solid fa-motorcycle"></i> Lalamove Rider Calculator
-                </h1>
-                <p id="userEmailDisplay" class="text-xs text-slate-400"></p>
+            <div class="flex items-center gap-3">
+                <img id="userAvatarHeader" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full border border-orange-500 object-cover">
+                <div>
+                    <h1 class="text-lg font-bold text-orange-500 flex items-center gap-2">
+                        <i class="fa-solid fa-motorcycle"></i> Rider Partner App
+                    </h1>
+                    <p id="userEmailDisplay" class="text-xs text-slate-400"></p>
+                </div>
             </div>
-            <button onclick="handleLogout()" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs px-4 py-2 rounded-xl border border-red-500/30 font-semibold transition">
-                <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
-            </button>
+            
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <button onclick="switchTab('calc')" id="navCalcBtn" class="bg-orange-500 text-white text-xs px-3 py-2 rounded-xl font-semibold transition">
+                    <i class="fa-solid fa-calculator mr-1"></i> Calculator
+                </button>
+                <button onclick="switchTab('profile')" id="navProfileBtn" class="bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl font-semibold transition">
+                    <i class="fa-solid fa-user mr-1"></i> Profile
+                </button>
+                <button id="navAdminBtn" onclick="switchTab('admin')" class="hidden bg-purple-600 hover:bg-purple-500 text-white text-xs px-3 py-2 rounded-xl font-semibold transition">
+                    <i class="fa-solid fa-user-shield mr-1"></i> Admin Panel
+                </button>
+                <button onclick="handleLogout()" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs px-3 py-2 rounded-xl border border-red-500/30 font-semibold transition">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- SECTION 1: CALCULATOR VIEW -->
+        <div id="viewCalc" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Form Input Panel -->
             <div class="lg:col-span-1 glass-card p-5 rounded-2xl space-y-4">
                 <h2 class="text-lg font-bold text-slate-200 border-b border-slate-700 pb-2 flex justify-between items-center">
@@ -107,15 +153,12 @@
 
                 <!-- Total Income Input with Guide -->
                 <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="text-xs font-semibold text-slate-300">Total Income / Kinita (₱)</label>
-                    </div>
-                    <!-- Guide Hint Box -->
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Total Income / Kinita (₱)</label>
                     <div class="bg-orange-500/10 border border-orange-500/30 rounded-xl p-2.5 mb-2 text-xs text-orange-300 flex items-start gap-2">
                         <i class="fa-solid fa-lightbulb mt-0.5 text-orange-400"></i>
                         <span><strong>Gabay:</strong> Pagsamahin ang iyong <strong>Online Income</strong> (Wallet/GCash) at <strong>Cash Income</strong> (Cash sa Kamay) para sa total income.</span>
                     </div>
-                    <input type="number" id="grossIncome" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="Online + Cash Income">
+                    <input type="number" id="grossIncome" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="Online + Cash Income" value="">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -125,13 +168,13 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1">Tip (₱)</label>
-                        <input type="number" id="tipAmount" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0">
+                        <input type="number" id="tipAmount" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0" value="">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">KM Tinakbo ngayong Araw</label>
-                    <input type="number" id="distanceKm" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0">
+                    <input type="number" id="distanceKm" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0" value="">
                 </div>
 
                 <!-- Gas Calculation Mode Toggle -->
@@ -148,11 +191,11 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1">KM per Liter</label>
-                                <input type="number" id="kmPerLiter" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0">
+                                <input type="number" id="kmPerLiter" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0" value="">
                             </div>
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1">Presyo/L (₱)</label>
-                                <input type="number" id="gasPrice" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0">
+                                <input type="number" id="gasPrice" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0" value="">
                             </div>
                         </div>
                     </div>
@@ -161,11 +204,11 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1">Ilang Litro</label>
-                                <input type="number" id="manualLiters" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0">
+                                <input type="number" id="manualLiters" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0" value="">
                             </div>
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1">Presyo/L (₱)</label>
-                                <input type="number" id="gasPriceManual" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0">
+                                <input type="number" id="gasPriceManual" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0" value="">
                             </div>
                         </div>
                     </div>
@@ -196,7 +239,7 @@
                 </button>
             </div>
 
-            <!-- Reports and Summary Panel -->
+            <!-- Reports Panel -->
             <div class="lg:col-span-2 space-y-6">
                 <!-- Period Selector -->
                 <div class="glass-card p-4 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
@@ -211,7 +254,6 @@
                             <button id="btnFilterMonth" onclick="setFilter('month')" class="px-3 py-1.5 rounded-lg text-slate-400">Buwan</button>
                             <button id="btnFilterAll" onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-slate-400">Lahat</button>
                         </div>
-                        <!-- Month Picker (Visible only in Monthly View) -->
                         <div id="monthPickerContainer" class="hidden">
                             <input type="month" id="monthPicker" onchange="renderDashboard()" class="p-1.5 rounded-xl input-style text-xs">
                         </div>
@@ -247,7 +289,7 @@
                     </div>
                 </div>
 
-                <!-- Weekly Monday-Sunday Breakdown Table View (Visible in Weekly view) -->
+                <!-- Weekly Monday-Sunday Table -->
                 <div id="weeklyReportContainer" class="hidden glass-card p-4 rounded-2xl">
                     <h3 class="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-calendar-week text-orange-400"></i> Weekly Breakdown (Lunes hanggang Linggo)
@@ -262,17 +304,13 @@
                                     <th class="p-2">Net Profit</th>
                                 </tr>
                             </thead>
-                            <tbody id="weeklyReportTable" class="divide-y divide-slate-800">
-                                <!-- Dynamic rows -->
-                            </tbody>
-                            <tfoot id="weeklyReportFoot" class="bg-slate-800/90 font-bold border-t border-slate-700 text-white">
-                                <!-- Total Row -->
-                            </tfoot>
+                            <tbody id="weeklyReportTable" class="divide-y divide-slate-800"></tbody>
+                            <tfoot id="weeklyReportFoot" class="bg-slate-800/90 font-bold border-t border-slate-700 text-white"></tfoot>
                         </table>
                     </div>
                 </div>
 
-                <!-- Trips Log Table -->
+                <!-- Trip Logs Table -->
                 <div class="glass-card p-4 rounded-2xl">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-sm font-bold text-slate-200"><i class="fa-solid fa-list mr-2 text-orange-400"></i>Talaan ng mga Byahe</h3>
@@ -290,53 +328,349 @@
                                     <th class="p-2.5 text-center">Aksyon</th>
                                 </tr>
                             </thead>
-                            <tbody id="tripLogsTable" class="divide-y divide-slate-800">
-                                <!-- Dynamic trip rows -->
-                            </tbody>
+                            <tbody id="tripLogsTable" class="divide-y divide-slate-800"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- SECTION 2: PROFILE MANAGEMENT VIEW -->
+        <div id="viewProfile" class="hidden max-w-xl mx-auto glass-card p-6 rounded-2xl space-y-5">
+            <h2 class="text-lg font-bold text-slate-200 border-b border-slate-700 pb-3 flex items-center gap-2">
+                <i class="fa-solid fa-id-card text-orange-400"></i> Profile Management
+            </h2>
+
+            <div class="flex flex-col items-center gap-3">
+                <img id="profileImagePreview" src="https://via.placeholder.com/120" class="w-28 h-28 rounded-full border-2 border-orange-500 object-cover shadow-lg">
+                <div class="text-center">
+                    <label class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-3 py-1.5 rounded-xl border border-slate-600 font-semibold inline-block">
+                        <i class="fa-solid fa-camera mr-1"></i> Palitan ang Litrato
+                        <input type="file" id="profilePhotoInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    </label>
+                    <span class="block text-[10px] text-slate-400 mt-1">Maximum size: 500 KB (Auto-compressed)</span>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Kumpletong Pangalan</label>
+                    <input type="text" id="profileFullName" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="Juan Dela Cruz">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">CP Number</label>
+                    <input type="tel" id="profilePhone" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="09123456789">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Kaarawan (Birthday)</label>
+                    <input type="date" id="profileDob" class="w-full p-2.5 rounded-xl input-style text-sm">
+                </div>
+                <button onclick="saveUserProfile()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition shadow">
+                    I-save ang Profile
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 3: ADMIN PANEL VIEW -->
+        <div id="viewAdmin" class="hidden space-y-6">
+            <!-- Summary Online/Offline Tracker -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass-card p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <span class="text-xs text-slate-400 block">Kabuuan ng Users</span>
+                        <span id="adminTotalUsers" class="text-xl font-bold text-white">0</span>
+                    </div>
+                    <i class="fa-solid fa-users fa-2x text-slate-600"></i>
+                </div>
+                <div class="glass-card p-4 rounded-2xl flex items-center justify-between border-emerald-500/30">
+                    <div>
+                        <span class="text-xs text-emerald-400 block">Naka-Online Ngayon</span>
+                        <span id="adminOnlineCount" class="text-xl font-bold text-emerald-400">0</span>
+                    </div>
+                    <i class="fa-solid fa-signal fa-2x text-emerald-500"></i>
+                </div>
+                <div class="glass-card p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <span class="text-xs text-slate-400 block">Naka-Offline</span>
+                        <span id="adminOfflineCount" class="text-xl font-bold text-slate-400">0</span>
+                    </div>
+                    <i class="fa-solid fa-power-off fa-2x text-slate-600"></i>
+                </div>
+            </div>
+
+            <!-- Users Management Table -->
+            <div class="glass-card p-5 rounded-2xl space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h2 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-users-gear text-purple-400 mr-2"></i>Pamamahala ng mga User Account</h2>
+                    <input type="text" id="adminUserSearch" oninput="renderAdminUsersTable()" class="p-2 px-3 rounded-xl input-style text-xs w-full sm:w-64" placeholder="Maghanap ng email o pangalan...">
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-slate-800/80 text-slate-400 border-b border-slate-700">
+                            <tr>
+                                <th class="p-3">User / Email</th>
+                                <th class="p-3">Pangalan / CP No.</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Role</th>
+                                <th class="p-3 text-center">Aksyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminUsersTable" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script>
-        // FIREBASE CONFIGURATION
+    <!-- Firebase Modular SDK Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged, 
+            sendPasswordResetEmail, 
+            GoogleAuthProvider, 
+            signInWithPopup,
+            setPersistence,
+            browserLocalPersistence,
+            browserSessionPersistence
+        } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            getDoc,
+            deleteDoc, 
+            onSnapshot,
+            serverTimestamp,
+            updateDoc
+        } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+
         const firebaseConfig = {
-            apiKey: "AIzaSyDummyKeyForGithubDeploy12345678",
-            authDomain: "rider-app-demo.firebaseapp.com",
-            projectId: "rider-app-demo",
-            storageBucket: "rider-app-demo.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef123456"
+            apiKey: "AIzaSyAkfQMQ3yZj7VEndSyexApckVVhMez9ajY",
+            authDomain: "lalamove-ledger.firebaseapp.com",
+            projectId: "lalamove-ledger",
+            storageBucket: "lalamove-ledger.firebasestorage.app",
+            messagingSenderId: "758793474266",
+            appId: "1:758793474266:web:d54abc14b2afa18897d5e3",
+            measurementId: "G-C9Z5EQKX7M"
         };
 
-        // Initialize Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        // Application State
+        let authMode = 'login';
         let currentUser = null;
-        let tripsData = {}; // Format: { "YYYY-MM-DD": { ... } }
+        let currentUserRole = 'user';
+        let tripsData = {};
+        let allUsersData = {};
         let currentFilter = 'day';
         let gasMode = 'auto';
+        let profileBase64 = '';
 
-        // Set default current date & current month
+        // Lockout and Inactivity Trackers
+        let failedLoginAttempts = 0;
+        let lockoutUntil = null;
+        let inactivityTimer = null;
+
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('tripDate').value = todayStr;
         document.getElementById('monthPicker').value = todayStr.substring(0, 7);
 
-        // Auth Observer
-        auth.onAuthStateChanged(user => {
+        // Global Event Handlers for HTML
+        window.switchAuthMode = function(mode) {
+            authMode = mode;
+            const isReg = mode === 'register';
+            document.getElementById('tabLoginBtn').className = isReg ? 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 transition' : 'flex-1 py-2 text-xs font-bold rounded-lg bg-orange-500 text-white transition';
+            document.getElementById('tabRegisterBtn').className = isReg ? 'flex-1 py-2 text-xs font-bold rounded-lg bg-orange-500 text-white transition' : 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 transition';
+            document.getElementById('authSubmitBtn').innerText = isReg ? 'Gumawa ng Account' : 'Mag-login';
+            document.getElementById('confirmPasswordGroup').classList.toggle('hidden', !isReg);
+            document.getElementById('passHint').classList.toggle('hidden', !isReg);
+            document.getElementById('rememberMeGroup').classList.toggle('hidden', isReg);
+            document.getElementById('dividerAuth').classList.toggle('hidden', isReg);
+            document.getElementById('googleAuthBtn').classList.toggle('hidden', isReg);
+            document.getElementById('authAlert').classList.add('hidden');
+        };
+
+        window.togglePasswordVisibility = function(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        };
+
+        window.showAlert = function(msg, isError = false) {
+            const alertBox = document.getElementById('authAlert');
+            alertBox.innerText = msg;
+            alertBox.className = `mb-4 p-3 rounded-lg text-sm font-medium text-center ${isError ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`;
+            alertBox.classList.remove('hidden');
+        };
+
+        // Account Lockout & Auth Logic
+        window.handleAuthSubmit = async function() {
+            if (lockoutUntil && new Date() < lockoutUntil) {
+                const remainingSecs = Math.ceil((lockoutUntil - new Date()) / 1000);
+                return window.showAlert(`Masyadong maraming maling subok. Maghintay ng ${remainingSecs} segundo bago sumubok muli.`, true);
+            }
+
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            if (!email || !password) return window.showAlert('Pakilagay ang email at password.', true);
+
+            const rememberMe = document.getElementById('rememberMe').checked;
+            const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+
+            try {
+                await setPersistence(auth, persistence);
+                if (authMode === 'login') {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    failedLoginAttempts = 0;
+                } else {
+                    const confirmPass = document.getElementById('authConfirmPassword').value;
+                    if (password !== confirmPass) return window.showAlert('Hindi magkatugma ang mga password.', true);
+                    if (password.length < 6) return window.showAlert('Dapat hindi bababa sa 6 characters ang password.', true);
+
+                    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+                    // Initialize default profile and role
+                    await setDoc(doc(db, 'users', userCred.user.uid), {
+                        email: email,
+                        role: 'user', // Default is normal user
+                        fullName: '',
+                        phone: '',
+                        dob: '',
+                        photoUrl: '',
+                        isOnline: true,
+                        lastSeen: serverTimestamp()
+                    });
+                    window.showAlert('Account successfully created!');
+                }
+            } catch (err) {
+                if (authMode === 'login') {
+                    failedLoginAttempts++;
+                    if (failedLoginAttempts >= 3) {
+                        lockoutUntil = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes lockout
+                        window.showAlert('Pansamantalang naka-lockout ang login sanhi ng sunod-sunod na maling password. Maghintay ng 2 minuto.', true);
+                    } else {
+                        window.showAlert(`Maling login details. (${3 - failedLoginAttempts} na subok na lang ang natitira)`, true);
+                    }
+                } else {
+                    window.showAlert(err.message, true);
+                }
+            }
+        };
+
+        window.handleGoogleSignIn = async function() {
+            const provider = new GoogleAuthProvider();
+            try {
+                await setPersistence(auth, browserLocalPersistence);
+                const res = await signInWithPopup(auth, provider);
+                const userDocRef = doc(db, 'users', res.user.uid);
+                const snap = await getDoc(userDocRef);
+                if (!snap.exists()) {
+                    await setDoc(userDocRef, {
+                        email: res.user.email,
+                        role: 'user',
+                        fullName: res.user.displayName || '',
+                        phone: '',
+                        dob: '',
+                        photoUrl: res.user.photoURL || '',
+                        isOnline: true,
+                        lastSeen: serverTimestamp()
+                    });
+                }
+            } catch (err) {
+                window.showAlert(err.message, true);
+            }
+        };
+
+        window.handleLogout = async function() {
+            if (currentUser) {
+                await updateDoc(doc(db, 'users', currentUser.uid), {
+                    isOnline: false,
+                    lastSeen: serverTimestamp()
+                });
+            }
+            signOut(auth);
+        };
+
+        window.toggleForgotPasswordView = function(show) {
+            document.getElementById('forgotPasswordForm').classList.toggle('hidden', !show);
+            document.getElementById('authAlert').classList.add('hidden');
+        };
+
+        window.handlePasswordReset = async function() {
+            const email = document.getElementById('resetEmail').value.trim();
+            if (!email) return window.showAlert('Pakilagay ang iyong registered email address.', true);
+            try {
+                await sendPasswordResetEmail(auth, email);
+                window.showAlert('Napadala na ang password reset link sa iyong email!');
+                setTimeout(() => window.toggleForgotPasswordView(false), 4000);
+            } catch (err) {
+                window.showAlert(err.message, true);
+            }
+        };
+
+        // Inactivity Timer
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            if (currentUser) {
+                inactivityTimer = setTimeout(() => {
+                    alert('Na-logout ka dahil sa ilang oras na hindi paggamit ng app para sa seguridad.');
+                    window.handleLogout();
+                }, 30 * 60 * 1000); // 30 minutes idle timeout
+            }
+        }
+        window.onload = resetInactivityTimer;
+        window.onmousemove = resetInactivityTimer;
+        window.onkeypress = resetInactivityTimer;
+
+        // Auth Observer & Tab Navigation
+        onAuthStateChanged(auth, async user => {
             if (user) {
                 currentUser = user;
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('appDashboard').classList.remove('hidden');
                 document.getElementById('userEmailDisplay').innerText = user.email;
+
+                // Set online status in DB
+                await updateDoc(doc(db, 'users', user.uid), {
+                    isOnline: true,
+                    lastSeen: serverTimestamp()
+                }).catch(() => {});
+
+                // Load User Document Profile & Role
+                const userSnap = await getDoc(doc(db, 'users', user.uid));
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    currentUserRole = data.role || 'user';
+                    document.getElementById('profileFullName').value = data.fullName || '';
+                    document.getElementById('profilePhone').value = data.phone || '';
+                    document.getElementById('profileDob').value = data.dob || '';
+                    if (data.photoUrl) {
+                        document.getElementById('profileImagePreview').src = data.photoUrl;
+                        document.getElementById('userAvatarHeader').src = data.photoUrl;
+                        profileBase64 = data.photoUrl;
+                    }
+                }
+
+                // Show Admin Panel Button if Admin
+                document.getElementById('navAdminBtn').classList.toggle('hidden', currentUserRole !== 'admin');
+
                 listenToUserTrips();
+                if (currentUserRole === 'admin') {
+                    listenToAllUsersForAdmin();
+                }
             } else {
                 currentUser = null;
                 document.getElementById('authContainer').classList.remove('hidden');
@@ -344,82 +678,157 @@
             }
         });
 
-        // Auth Logic
-        function showAlert(msg, isError = false) {
-            const alertBox = document.getElementById('authAlert');
-            alertBox.innerText = msg;
-            alertBox.className = `mb-4 p-3 rounded-lg text-sm font-medium text-center ${isError ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`;
-            alertBox.classList.remove('hidden');
-        }
+        window.switchTab = function(tab) {
+            document.getElementById('viewCalc').classList.toggle('hidden', tab !== 'calc');
+            document.getElementById('viewProfile').classList.toggle('hidden', tab !== 'profile');
+            document.getElementById('viewAdmin').classList.toggle('hidden', tab !== 'admin');
 
-        function handleLogin() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
-            if (!email || !password) return showAlert('Pakilagay ang email at password.', true);
+            document.getElementById('navCalcBtn').className = tab === 'calc' ? 'bg-orange-500 text-white text-xs px-3 py-2 rounded-xl font-semibold transition' : 'bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl font-semibold transition';
+            document.getElementById('navProfileBtn').className = tab === 'profile' ? 'bg-orange-500 text-white text-xs px-3 py-2 rounded-xl font-semibold transition' : 'bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl font-semibold transition';
+            document.getElementById('navAdminBtn').className = tab === 'admin' ? 'bg-purple-600 text-white text-xs px-3 py-2 rounded-xl font-semibold transition' : 'bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl font-semibold transition';
+        };
 
-            auth.signInWithEmailAndPassword(email, password)
-                .catch(err => showAlert(err.message, true));
-        }
+        // Profile Photo Upload (500 KB Limit + Compression)
+        window.handleImageUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        function handleRegister() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
-            if (!email || !password) return showAlert('Pakilagay ang email at password.', true);
+            if (file.size > 500 * 1024) {
+                alert('Masyadong malaki ang litrato. Gagamitan natin ito ng auto-compression para ma-save.');
+            }
 
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(() => showAlert('Account successfully created! Logging in...'))
-                .catch(err => showAlert(err.message, true));
-        }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 300;
+                    const scaleFactor = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleFactor;
 
-        function handleLogout() {
-            auth.signOut();
-        }
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        function toggleForgotPasswordView(show) {
-            document.getElementById('authForms').classList.toggle('hidden', show);
-            document.getElementById('forgotPasswordForm').classList.toggle('hidden', !show);
-            document.getElementById('authAlert').classList.add('hidden');
-        }
+                    profileBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('profileImagePreview').src = profileBase64;
+                    document.getElementById('userAvatarHeader').src = profileBase64;
+                };
+            };
+            reader.readAsDataURL(file);
+        };
 
-        function handlePasswordReset() {
-            const email = document.getElementById('resetEmail').value.trim();
-            if (!email) return showAlert('Pakilagay ang iyong registered email address.', true);
+        window.saveUserProfile = async function() {
+            if (!currentUser) return;
+            const payload = {
+                fullName: document.getElementById('profileFullName').value.trim(),
+                phone: document.getElementById('profilePhone').value.trim(),
+                dob: document.getElementById('profileDob').value,
+                photoUrl: profileBase64
+            };
 
-            auth.sendPasswordResetEmail(email)
-                .then(() => {
-                    showAlert('Napadala na ang password reset link sa iyong email! Paki-check ang iyong inbox o spam.');
-                    setTimeout(() => toggleForgotPasswordView(false), 4000);
-                })
-                .catch(err => showAlert(err.message, true));
-        }
+            await updateDoc(doc(db, 'users', currentUser.uid), payload);
+            alert('Matagumpay na na-update ang iyong Profile!');
+        };
 
-        // Firestore Real-time Sync
+        // Firestore Listeners
         function listenToUserTrips() {
             if (!currentUser) return;
-            db.collection('users').doc(currentUser.uid).collection('trips')
-                .onSnapshot(snapshot => {
-                    tripsData = {};
-                    snapshot.forEach(doc => {
-                        tripsData[doc.id] = doc.data();
-                    });
-                    onDateChange();
-                    renderDashboard();
-                }, err => {
-                    console.warn("Firestore fallback to local state for demo:", err);
+            const tripsRef = collection(db, 'users', currentUser.uid, 'trips');
+            onSnapshot(tripsRef, snapshot => {
+                tripsData = {};
+                snapshot.forEach(docSnap => {
+                    tripsData[docSnap.id] = docSnap.data();
                 });
+                window.onDateChange();
+                window.renderDashboard();
+            });
         }
 
-        // Calculation & Gas Mode Functions
-        function setGasMode(mode) {
+        function listenToAllUsersForAdmin() {
+            const usersRef = collection(db, 'users');
+            onSnapshot(usersRef, snapshot => {
+                allUsersData = {};
+                let total = 0, online = 0, offline = 0;
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    allUsersData[docSnap.id] = data;
+                    total++;
+                    if (data.isOnline) online++; else offline++;
+                });
+
+                document.getElementById('adminTotalUsers').innerText = total;
+                document.getElementById('adminOnlineCount').innerText = online;
+                document.getElementById('adminOfflineCount').innerText = offline;
+
+                window.renderAdminUsersTable();
+            });
+        }
+
+        window.renderAdminUsersTable = function() {
+            const tbody = document.getElementById('adminUsersTable');
+            tbody.innerHTML = '';
+            const search = document.getElementById('adminUserSearch').value.toLowerCase();
+
+            Object.keys(allUsersData).forEach(uid => {
+                const u = allUsersData[uid];
+                const searchKey = `${u.email} ${u.fullName} ${u.phone}`.toLowerCase();
+                if (search && !searchKey.includes(search)) return;
+
+                const statusBadge = u.isOnline 
+                    ? `<span class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 text-[10px]"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Online</span>`
+                    : `<span class="bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full text-[10px]">Offline</span>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50 transition">
+                        <td class="p-3 font-medium text-slate-200">
+                            <div class="flex items-center gap-2">
+                                <img src="${u.photoUrl || 'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full object-cover border border-slate-700">
+                                <div>
+                                    <div>${u.email}</div>
+                                    <div class="text-[10px] text-slate-500">${uid}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-3 text-slate-300">
+                            <div>${u.fullName || '<i>Walang Pangalan</i>'}</div>
+                            <div class="text-[10px] text-slate-400">${u.phone || '-'}</div>
+                        </td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3 font-bold ${u.role === 'admin' ? 'text-purple-400' : 'text-slate-400'}">${(u.role || 'user').toUpperCase()}</td>
+                        <td class="p-3 text-center space-x-1">
+                            <button onclick="adminTriggerReset('${u.email}')" title="Ipadala ang Reset Password Email" class="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 p-1.5 rounded-lg border border-orange-500/30">
+                                <i class="fa-solid fa-key"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        window.adminTriggerReset = async function(email) {
+            if (confirm(`Ipadala ang password reset link sa ${email}?`)) {
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    alert(`Napadala na ang password reset link sa ${email}`);
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
+            }
+        };
+
+        // Core Calculation & Gas Mode Functions
+        window.setGasMode = function(mode) {
             gasMode = mode;
             document.getElementById('btnGasAuto').className = mode === 'auto' ? 'px-2 py-1 rounded-md bg-orange-500 text-white font-bold' : 'px-2 py-1 rounded-md text-slate-400';
             document.getElementById('btnGasManual').className = mode === 'manual' ? 'px-2 py-1 rounded-md bg-orange-500 text-white font-bold' : 'px-2 py-1 rounded-md text-slate-400';
             document.getElementById('gasAutoInputs').classList.toggle('hidden', mode !== 'auto');
             document.getElementById('gasManualInputs').classList.toggle('hidden', mode !== 'manual');
-            calculate();
-        }
+            window.calculate();
+        };
 
-        function calculate() {
+        window.calculate = function() {
             const gross = parseFloat(document.getElementById('grossIncome').value) || 0;
             const commRate = parseFloat(document.getElementById('commissionRate').value) || 0;
             const tip = parseFloat(document.getElementById('tipAmount').value) || 0;
@@ -450,9 +859,9 @@
             document.getElementById('calcNetVal').innerText = netProfit.toFixed(2);
 
             return { gross, commRate, commVal, tip, distance, gasLiters, gasCost, netProfit };
-        }
+        };
 
-        function onDateChange() {
+        window.onDateChange = function() {
             const selectedDate = document.getElementById('tripDate').value;
             const recordBadge = document.getElementById('recordBadge');
 
@@ -464,11 +873,11 @@
                 document.getElementById('distanceKm').value = data.distance || '';
                 
                 if (data.gasMode === 'manual') {
-                    setGasMode('manual');
+                    window.setGasMode('manual');
                     document.getElementById('manualLiters').value = data.gasLiters || '';
                     document.getElementById('gasPriceManual').value = data.gasPrice || '';
                 } else {
-                    setGasMode('auto');
+                    window.setGasMode('auto');
                     document.getElementById('kmPerLiter').value = data.kmPerLiter || '';
                     document.getElementById('gasPrice').value = data.gasPrice || '';
                 }
@@ -477,8 +886,8 @@
                 resetFormInputs();
                 recordBadge.classList.add('hidden');
             }
-            calculate();
-        }
+            window.calculate();
+        };
 
         function resetFormInputs() {
             document.getElementById('grossIncome').value = '';
@@ -488,14 +897,14 @@
             document.getElementById('gasPrice').value = '';
             document.getElementById('manualLiters').value = '';
             document.getElementById('gasPriceManual').value = '';
-            calculate();
+            window.calculate();
         }
 
-        function saveTrip() {
+        window.saveTrip = async function() {
             const selectedDate = document.getElementById('tripDate').value;
             if (!selectedDate) return alert('Pumili ng petsa.');
 
-            const calc = calculate();
+            const calc = window.calculate();
             const payload = {
                 date: selectedDate,
                 gross: calc.gross,
@@ -512,50 +921,46 @@
                 updatedAt: new Date().toISOString()
             };
 
-            // Local Update
             tripsData[selectedDate] = payload;
-
-            // Firestore Sync
             if (currentUser) {
-                db.collection('users').doc(currentUser.uid).collection('trips').doc(selectedDate).set(payload);
+                await setDoc(doc(db, 'users', currentUser.uid, 'trips', selectedDate), payload);
             }
 
             alert('Nai-save na ang biyahe!');
             resetFormInputs();
-            renderDashboard();
-        }
+            window.renderDashboard();
+        };
 
-        function deleteCurrentDateRecord() {
+        window.deleteCurrentDateRecord = async function() {
             const selectedDate = document.getElementById('tripDate').value;
             if (tripsData[selectedDate]) {
                 if (confirm(`Sigurado ka bang buburahin ang record sa ${selectedDate}?`)) {
                     delete tripsData[selectedDate];
                     if (currentUser) {
-                        db.collection('users').doc(currentUser.uid).collection('trips').doc(selectedDate).delete();
+                        await deleteDoc(doc(db, 'users', currentUser.uid, 'trips', selectedDate));
                     }
-                    onDateChange();
-                    renderDashboard();
+                    window.onDateChange();
+                    window.renderDashboard();
                 }
             } else {
                 alert('Walang nakatagong record sa petsang ito.');
             }
-        }
+        };
 
-        function deleteTrip(dateStr) {
+        window.deleteTrip = async function(dateStr) {
             if (confirm(`Buburahin ang biyahe noong ${dateStr}?`)) {
                 delete tripsData[dateStr];
                 if (currentUser) {
-                    db.collection('users').doc(currentUser.uid).collection('trips').doc(dateStr).delete();
+                    await deleteDoc(doc(db, 'users', currentUser.uid, 'trips', dateStr));
                 }
                 if (document.getElementById('tripDate').value === dateStr) {
-                    onDateChange();
+                    window.onDateChange();
                 }
-                renderDashboard();
+                window.renderDashboard();
             }
-        }
+        };
 
-        // Dashboard Reporting & Monday-Sunday Cycle
-        function setFilter(filter) {
+        window.setFilter = function(filter) {
             currentFilter = filter;
             document.getElementById('btnFilterDay').className = filter === 'day' ? 'px-3 py-1.5 rounded-lg bg-orange-500 font-bold text-white' : 'px-3 py-1.5 rounded-lg text-slate-400';
             document.getElementById('btnFilterWeek').className = filter === 'week' ? 'px-3 py-1.5 rounded-lg bg-orange-500 font-bold text-white' : 'px-3 py-1.5 rounded-lg text-slate-400';
@@ -565,18 +970,17 @@
             document.getElementById('monthPickerContainer').classList.toggle('hidden', filter !== 'month');
             document.getElementById('weeklyReportContainer').classList.toggle('hidden', filter !== 'week');
             
-            renderDashboard();
-        }
+            window.renderDashboard();
+        };
 
-        // Get Monday date of any given date
         function getMonday(d) {
             const date = new Date(d);
             const day = date.getDay();
-            const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
             return new Date(date.setDate(diff));
         }
 
-        function renderDashboard() {
+        window.renderDashboard = function() {
             const selectedDateStr = document.getElementById('tripDate').value;
             const selectedDate = new Date(selectedDateStr);
             const selectedMonthStr = document.getElementById('monthPicker').value;
@@ -598,7 +1002,6 @@
                 filteredDates = filteredDates.filter(d => d.startsWith(selectedMonthStr));
             }
 
-            // Totals
             let gross = 0, net = 0, gasCost = 0, gasLiters = 0, tips = 0, distance = 0;
             const weeklyGroups = {};
 
@@ -611,7 +1014,6 @@
                 tips += item.tip || 0;
                 distance += item.distance || 0;
 
-                // Group by Monday for Weekly Report Table
                 const mon = getMonday(new Date(dateKey)).toISOString().split('T')[0];
                 if (!weeklyGroups[mon]) {
                     weeklyGroups[mon] = { gross: 0, gasCost: 0, netProfit: 0 };
@@ -621,7 +1023,6 @@
                 weeklyGroups[mon].netProfit += item.netProfit || 0;
             });
 
-            // Update Summary Cards
             document.getElementById('sumGross').innerText = gross.toFixed(2);
             document.getElementById('sumNet').innerText = net.toFixed(2);
             document.getElementById('sumGasCost').innerText = gasCost.toFixed(2);
@@ -630,7 +1031,6 @@
             document.getElementById('sumDistance').innerText = distance.toFixed(1);
             document.getElementById('sumPerKm').innerText = distance > 0 ? (net / distance).toFixed(2) : '0.00';
 
-            // Render Weekly Breakdown Table (Monday to Sunday)
             if (currentFilter === 'week') {
                 const weeklyTable = document.getElementById('weeklyReportTable');
                 weeklyTable.innerHTML = '';
@@ -653,7 +1053,7 @@
 
                 document.getElementById('weeklyReportFoot').innerHTML = `
                     <tr>
-                        <td class="p-2">KABUUPAN</td>
+                        <td class="p-2">KABUUAN</td>
                         <td class="p-2 text-white">₱${gross.toFixed(2)}</td>
                         <td class="p-2 text-red-400">₱${gasCost.toFixed(2)}</td>
                         <td class="p-2 text-emerald-400">₱${net.toFixed(2)}</td>
@@ -661,7 +1061,6 @@
                 `;
             }
 
-            // Render Log Table
             const tbody = document.getElementById('tripLogsTable');
             tbody.innerHTML = '';
             document.getElementById('logCount').innerText = `${filteredDates.length} records`;
@@ -688,7 +1087,7 @@
                     </tr>
                 `;
             });
-        }
+        };
     </script>
 </body>
 </html>
