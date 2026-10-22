@@ -136,6 +136,8 @@
         <div id="viewCalc" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Form Input Panel -->
             <div class="lg:col-span-1 glass-card p-5 rounded-2xl space-y-4">
+                <div id="calcSuccessAlert" class="hidden p-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-xl text-xs font-medium text-center transition-all"></div>
+
                 <h2 class="text-lg font-bold text-slate-200 border-b border-slate-700 pb-2 flex justify-between items-center">
                     <span><i class="fa-solid fa-pen-to-square text-orange-400 mr-2"></i>Input ng Byahe</span>
                     <span id="recordBadge" class="hidden text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">May Record Na</span>
@@ -474,7 +476,6 @@
         let gasMode = 'auto';
         let profileBase64 = '';
 
-        // Lockout and Inactivity Trackers
         let failedLoginAttempts = 0;
         let lockoutUntil = null;
         let inactivityTimer = null;
@@ -483,7 +484,7 @@
         document.getElementById('tripDate').value = todayStr;
         document.getElementById('monthPicker').value = todayStr.substring(0, 7);
 
-        // Global Event Handlers for HTML
+        // Global Handlers
         window.switchAuthMode = function(mode) {
             authMode = mode;
             const isReg = mode === 'register';
@@ -517,7 +518,16 @@
             alertBox.classList.remove('hidden');
         };
 
-        // Account Lockout & Auth Logic
+        function showCalcAlert(msg) {
+            const alertDiv = document.getElementById('calcSuccessAlert');
+            alertDiv.innerText = msg;
+            alertDiv.classList.remove('hidden');
+            setTimeout(() => {
+                alertDiv.classList.add('hidden');
+            }, 4000);
+        }
+
+        // Auth
         window.handleAuthSubmit = async function() {
             if (lockoutUntil && new Date() < lockoutUntil) {
                 const remainingSecs = Math.ceil((lockoutUntil - new Date()) / 1000);
@@ -542,10 +552,9 @@
                     if (password.length < 6) return window.showAlert('Dapat hindi bababa sa 6 characters ang password.', true);
 
                     const userCred = await createUserWithEmailAndPassword(auth, email, password);
-                    // Initialize default profile and role
                     await setDoc(doc(db, 'users', userCred.user.uid), {
                         email: email,
-                        role: 'user', // Default is normal user
+                        role: 'user',
                         fullName: '',
                         phone: '',
                         dob: '',
@@ -559,7 +568,7 @@
                 if (authMode === 'login') {
                     failedLoginAttempts++;
                     if (failedLoginAttempts >= 3) {
-                        lockoutUntil = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes lockout
+                        lockoutUntil = new Date(Date.now() + 2 * 60 * 1000);
                         window.showAlert('Pansamantalang naka-lockout ang login sanhi ng sunod-sunod na maling password. Maghintay ng 2 minuto.', true);
                     } else {
                         window.showAlert(`Maling login details. (${3 - failedLoginAttempts} na subok na lang ang natitira)`, true);
@@ -599,7 +608,7 @@
                 await updateDoc(doc(db, 'users', currentUser.uid), {
                     isOnline: false,
                     lastSeen: serverTimestamp()
-                });
+                }).catch(() => {});
             }
             signOut(auth);
         };
@@ -621,21 +630,20 @@
             }
         };
 
-        // Inactivity Timer
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
             if (currentUser) {
                 inactivityTimer = setTimeout(() => {
-                    alert('Na-logout ka dahil sa ilang oras na hindi paggamit ng app para sa seguridad.');
+                    alert('Na-logout ka dahil sa ilang oras na hindi paggamit ng app.');
                     window.handleLogout();
-                }, 30 * 60 * 1000); // 30 minutes idle timeout
+                }, 30 * 60 * 1000);
             }
         }
         window.onload = resetInactivityTimer;
         window.onmousemove = resetInactivityTimer;
         window.onkeypress = resetInactivityTimer;
 
-        // Auth Observer & Tab Navigation
+        // Auth Observer
         onAuthStateChanged(auth, async user => {
             if (user) {
                 currentUser = user;
@@ -643,13 +651,14 @@
                 document.getElementById('appDashboard').classList.remove('hidden');
                 document.getElementById('userEmailDisplay').innerText = user.email;
 
-                // Set online status in DB
+                // Naka-hide muna ang Admin Button By Default
+                document.getElementById('navAdminBtn').classList.add('hidden');
+
                 await updateDoc(doc(db, 'users', user.uid), {
                     isOnline: true,
                     lastSeen: serverTimestamp()
                 }).catch(() => {});
 
-                // Load User Document Profile & Role
                 const userSnap = await getDoc(doc(db, 'users', user.uid));
                 if (userSnap.exists()) {
                     const data = userSnap.data();
@@ -664,13 +673,13 @@
                     }
                 }
 
-                // Show Admin Panel Button if Admin
-                document.getElementById('navAdminBtn').classList.toggle('hidden', currentUserRole !== 'admin');
-
-                listenToUserTrips();
+                // EKSAKTONG CHECK: Lalabas lang ang button kung 'admin' ang role sa DB
                 if (currentUserRole === 'admin') {
+                    document.getElementById('navAdminBtn').classList.remove('hidden');
                     listenToAllUsersForAdmin();
                 }
+
+                listenToUserTrips();
             } else {
                 currentUser = null;
                 document.getElementById('authContainer').classList.remove('hidden');
@@ -688,14 +697,10 @@
             document.getElementById('navAdminBtn').className = tab === 'admin' ? 'bg-purple-600 text-white text-xs px-3 py-2 rounded-xl font-semibold transition' : 'bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl font-semibold transition';
         };
 
-        // Profile Photo Upload (500 KB Limit + Compression)
+        // Profile Photo
         window.handleImageUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            if (file.size > 500 * 1024) {
-                alert('Masyadong malaki ang litrato. Gagamitan natin ito ng auto-compression para ma-save.');
-            }
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -732,7 +737,7 @@
             alert('Matagumpay na na-update ang iyong Profile!');
         };
 
-        // Firestore Listeners
+        // Listeners
         function listenToUserTrips() {
             if (!currentUser) return;
             const tripsRef = collection(db, 'users', currentUser.uid, 'trips');
@@ -818,7 +823,7 @@
             }
         };
 
-        // Core Calculation & Gas Mode Functions
+        // Gas Calculation
         window.setGasMode = function(mode) {
             gasMode = mode;
             document.getElementById('btnGasAuto').className = mode === 'auto' ? 'px-2 py-1 rounded-md bg-orange-500 text-white font-bold' : 'px-2 py-1 rounded-md text-slate-400';
@@ -926,7 +931,9 @@
                 await setDoc(doc(db, 'users', currentUser.uid, 'trips', selectedDate), payload);
             }
 
-            alert('Nai-save na ang biyahe!');
+            // In-App Alert Confirmation Notice
+            showCalcAlert('Matagumpay na nai-save ang biyahe para sa ' + selectedDate + '!');
+
             resetFormInputs();
             window.renderDashboard();
         };
