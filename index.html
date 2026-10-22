@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="tl">
 <head>
@@ -42,7 +42,7 @@
                 </div>
                 <div>
                     <h1 class="text-base sm:text-lg font-bold text-white tracking-wide">Rider Kita & Gas Tracker</h1>
-                    <p class="text-xs text-slate-400">Lalamove & Delivery Rider Ledger</p>
+                    <p class="text-xs text-slate-400">Lalamove Ledger & Date-Based Retrieval</p>
                 </div>
             </div>
             <div class="bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-xs font-semibold text-amber-400 flex items-center gap-1.5">
@@ -58,26 +58,40 @@
 
             <!-- Left Column: Ride Input Form -->
             <section class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-5">
+                
                 <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                     <h2 class="text-base font-semibold text-slate-200 flex items-center gap-2">
                         <i class="fa-solid fa-sliders text-amber-500"></i> Detalye ng Biyahe
                     </h2>
                     <button type="button" id="resetBtn" class="text-xs text-slate-400 hover:text-amber-400 transition flex items-center gap-1">
-                        <i class="fa-solid fa-rotate-right"></i> Reset
+                        <i class="fa-solid fa-rotate-right"></i> Reset Input
                     </button>
                 </div>
 
                 <form id="calculatorForm" class="space-y-4" onsubmit="return false;">
                     
-                    <!-- Date Picker Input -->
-                    <div>
-                        <label for="rideDate" class="block text-xs font-medium text-slate-300 mb-1">
-                            Petsa ng Biyahe (Date)
-                        </label>
-                        <div class="relative">
-                            <input type="date" id="rideDate"
-                                class="w-full pl-3 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition text-sm">
+                    <!-- Date Picker & Record Status Indicator -->
+                    <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label for="rideDate" class="block text-xs font-bold text-slate-300">
+                                <i class="fa-solid fa-calendar-days text-amber-500 mr-1"></i> Pumili ng Petsa (Date Picker)
+                            </label>
+                            <span id="dateStatusBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                Bagong Entry
+                            </span>
                         </div>
+                        
+                        <div class="flex gap-2">
+                            <input type="date" id="rideDate"
+                                class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition text-sm">
+                            
+                            <button type="button" id="deleteCurrentDateBtn" class="px-3 py-2 bg-rose-900/40 hover:bg-rose-800 border border-rose-700/50 text-rose-300 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1 hidden whitespace-nowrap" title="Burahin ang Record ng Petsang Ito">
+                                <i class="fa-solid fa-trash-can"></i> Burahin
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-500 italic" id="dateHelperText">
+                            * Pag pumili ng petsa, kusa nitong ire-retrieve ang na-save na record kung meron man.
+                        </p>
                     </div>
 
                     <!-- Gross Fare & Tips -->
@@ -183,10 +197,12 @@
                         </div>
                     </div>
 
-                    <!-- Save Record Button -->
-                    <button type="button" id="saveTripBtn" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 active:scale-[0.99]">
-                        <i class="fa-solid fa-plus-circle text-base"></i> I-save ang Biyaheng Ito
-                    </button>
+                    <!-- Action Buttons -->
+                    <div class="pt-2">
+                        <button type="button" id="saveTripBtn" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 active:scale-[0.99]">
+                            <i class="fa-solid fa-floppy-disk text-base"></i> <span id="saveBtnText">I-save ang Record</span>
+                        </button>
+                    </div>
                 </form>
             </section>
 
@@ -270,17 +286,17 @@
                 </div>
 
                 <!-- Filter Mode Selector -->
-                <div class="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs">
-                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-950 bg-amber-500 transition" data-filter="day">
+                <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs overflow-x-auto">
+                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-950 bg-amber-500 transition whitespace-nowrap" data-filter="day">
                         Ngayong Araw
                     </button>
-                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition" data-filter="week">
+                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition whitespace-nowrap" data-filter="week">
                         Ngayong Linggo
                     </button>
-                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition" data-filter="month">
+                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition whitespace-nowrap" data-filter="month">
                         Ngayong Buwan
                     </button>
-                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition" data-filter="all">
+                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition whitespace-nowrap" data-filter="all">
                         Lahat
                     </button>
                 </div>
@@ -381,6 +397,9 @@
     <script>
         // DOM Elements
         const rideDateInput = document.getElementById('rideDate');
+        const dateStatusBadge = document.getElementById('dateStatusBadge');
+        const deleteCurrentDateBtn = document.getElementById('deleteCurrentDateBtn');
+
         const grossEarningsInput = document.getElementById('grossEarnings');
         const tipsInput = document.getElementById('tips');
         const commissionRateInput = document.getElementById('commissionRate');
@@ -398,6 +417,7 @@
 
         const resetBtn = document.getElementById('resetBtn');
         const saveTripBtn = document.getElementById('saveTripBtn');
+        const saveBtnText = document.getElementById('saveBtnText');
         const copySummaryBtn = document.getElementById('copySummaryBtn');
         const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
@@ -425,12 +445,12 @@
         const historyTableBody = document.getElementById('historyTableBody');
         const emptyHistoryMsg = document.getElementById('emptyHistoryMsg');
 
-        // Application State
+        // State variables
         let calculationMode = 'efficiency'; // 'efficiency' or 'manual'
         let activeFilter = 'day'; // 'day', 'week', 'month', 'all'
         let currentCalculations = {};
 
-        // Helper: Format Currency PHP
+        // Helper: Format PHP currency
         function formatPHP(amount) {
             return '₱' + (parseFloat(amount) || 0).toLocaleString('en-PH', {
                 minimumFractionDigits: 2,
@@ -447,6 +467,15 @@
             rideDateInput.value = `${year}-${month}-${day}`;
         }
 
+        // Storage Access Helpers
+        function getHistory() {
+            return JSON.parse(localStorage.getItem('lalamove_enhanced_logs') || '[]');
+        }
+
+        function saveHistory(logs) {
+            localStorage.setItem('lalamove_enhanced_logs', JSON.stringify(logs));
+        }
+
         // Calculation Core Function
         function calculateEarnings() {
             const gross = parseFloat(grossEarningsInput.value) || 0;
@@ -457,10 +486,8 @@
             const efficiency = parseFloat(fuelEfficiencyInput.value) || 1;
             const manualLiters = parseFloat(manualGasLitersInput.value) || 0;
 
-            // 1. Commission Fee
             const commissionFee = gross * (commRate / 100);
 
-            // 2. Gas Consumed
             let gasLiters = 0;
             if (calculationMode === 'efficiency') {
                 gasLiters = efficiency > 0 ? (distance / efficiency) : 0;
@@ -468,15 +495,11 @@
                 gasLiters = manualLiters;
             }
 
-            // 3. Gas Cost
             const gasCost = gasLiters * gasPrice;
-
-            // 4. Net Income
             const totalIncome = gross + tip;
             const totalExpenses = commissionFee + gasCost;
             const netEarnings = totalIncome - totalExpenses;
 
-            // 5. Efficiency Metrics
             const profitMargin = totalIncome > 0 ? (netEarnings / totalIncome) * 100 : 0;
             const netPerKm = distance > 0 ? (netEarnings / distance) : 0;
 
@@ -498,7 +521,7 @@
             updateLiveDisplay();
         }
 
-        // Update Live Calculation Cards
+        // Update Live Calculation UI
         function updateLiveDisplay() {
             const {
                 gross,
@@ -525,23 +548,103 @@
             netBreakdown.innerText = formatPHP(netEarnings);
         }
 
-        // Mode Switching
-        modeEfficiencyBtn.addEventListener('click', () => {
-            calculationMode = 'efficiency';
-            modeEfficiencyBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-950 bg-amber-500 shadow transition";
-            modeManualBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition";
-            efficiencyInputGroup.classList.remove('hidden');
-            manualInputGroup.classList.add('hidden');
-            calculateEarnings();
-        });
+        // Reset Input Fields to Blank / Defaults
+        function resetInputsOnly() {
+            grossEarningsInput.value = '';
+            tipsInput.value = '';
+            distanceKmInput.value = '';
+            manualGasLitersInput.value = '';
+            
+            // Keep default rates intact for fast entry
+            commissionRateInput.value = 20;
+            commissionNumInput.value = 20;
+            commissionRateValue.innerText = '20%';
+            gasPriceInput.value = 88;
+            fuelEfficiencyInput.value = 30;
 
-        modeManualBtn.addEventListener('click', () => {
-            calculationMode = 'manual';
-            modeManualBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-950 bg-amber-500 shadow transition";
-            modeEfficiencyBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition";
-            manualInputGroup.classList.remove('hidden');
-            efficiencyInputGroup.classList.add('hidden');
             calculateEarnings();
+        }
+
+        // Check & Load Existing Record for Selected Date
+        function checkAndLoadDateRecord() {
+            const selectedDate = rideDateInput.value;
+            if (!selectedDate) return;
+
+            const logs = getHistory();
+            const existingRecord = logs.find(log => log.date === selectedDate);
+
+            if (existingRecord) {
+                // Populate inputs with existing date record
+                grossEarningsInput.value = existingRecord.gross;
+                tipsInput.value = existingRecord.tip || 0;
+                commissionRateInput.value = existingRecord.commRate || 20;
+                commissionNumInput.value = existingRecord.commRate || 20;
+                commissionRateValue.innerText = (existingRecord.commRate || 20) + '%';
+                distanceKmInput.value = existingRecord.distance || 0;
+                gasPriceInput.value = existingRecord.gasPrice || 88;
+
+                if (existingRecord.calculationMode === 'manual') {
+                    manualGasLitersInput.value = existingRecord.gasLiters || 0;
+                    setCalculationMode('manual');
+                } else {
+                    fuelEfficiencyInput.value = existingRecord.fuelEfficiency || 30;
+                    setCalculationMode('efficiency');
+                }
+
+                // Update UI indicators
+                dateStatusBadge.innerText = 'Naka-load na Record';
+                dateStatusBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-900/60 text-emerald-400 border border-emerald-700/60';
+                deleteCurrentDateBtn.classList.remove('hidden');
+                saveBtnText.innerText = 'I-update ang Record';
+
+            } else {
+                // No record found: Clear form inputs for new record
+                resetInputsOnly();
+
+                dateStatusBadge.innerText = 'Bagong Entry';
+                dateStatusBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+                deleteCurrentDateBtn.classList.add('hidden');
+                saveBtnText.innerText = 'I-save ang Record';
+            }
+
+            calculateEarnings();
+        }
+
+        // Calculation Mode Selector Handler
+        function setCalculationMode(mode) {
+            calculationMode = mode;
+            if (mode === 'efficiency') {
+                modeEfficiencyBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-950 bg-amber-500 shadow transition";
+                modeManualBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition";
+                efficiencyInputGroup.classList.remove('hidden');
+                manualInputGroup.classList.add('hidden');
+            } else {
+                modeManualBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-950 bg-amber-500 shadow transition";
+                modeEfficiencyBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition";
+                manualInputGroup.classList.remove('hidden');
+                efficiencyInputGroup.classList.add('hidden');
+            }
+            calculateEarnings();
+        }
+
+        modeEfficiencyBtn.addEventListener('click', () => setCalculationMode('efficiency'));
+        modeManualBtn.addEventListener('click', () => setCalculationMode('manual'));
+
+        // Date Input Change Event
+        rideDateInput.addEventListener('change', checkAndLoadDateRecord);
+
+        // Delete current date record button
+        deleteCurrentDateBtn.addEventListener('click', () => {
+            const selectedDate = rideDateInput.value;
+            if (confirm(`Sigurado ka bang gusto mong burahin ang record para sa petsang ${selectedDate}?`)) {
+                let logs = getHistory();
+                logs = logs.filter(log => log.date !== selectedDate);
+                saveHistory(logs);
+                
+                checkAndLoadDateRecord();
+                renderHistoryAndSummary();
+                showToast(`Na-bura na ang record nung ${selectedDate}.`, 'fa-solid fa-trash-can');
+            }
         });
 
         // Commission Input Sync
@@ -557,25 +660,15 @@
             calculateEarnings();
         });
 
-        // Event Listeners for Live Computation
+        // Live calculation event listeners
         [grossEarningsInput, tipsInput, distanceKmInput, gasPriceInput, fuelEfficiencyInput, manualGasLitersInput].forEach(input => {
             input.addEventListener('input', calculateEarnings);
         });
 
-        // Reset Button Action
+        // Reset Button
         resetBtn.addEventListener('click', () => {
-            setTodayDate();
-            grossEarningsInput.value = 240;
-            tipsInput.value = 0;
-            commissionRateInput.value = 20;
-            commissionNumInput.value = 20;
-            commissionRateValue.innerText = '20%';
-            distanceKmInput.value = 15;
-            gasPriceInput.value = 88;
-            fuelEfficiencyInput.value = 30;
-            manualGasLitersInput.value = 0.5;
-            calculateEarnings();
-            showToast('Nabalik na sa default values!', 'fa-solid fa-rotate-right');
+            resetInputsOnly();
+            showToast('Nalinis na ang mga input!', 'fa-solid fa-rotate-right');
         });
 
         // Copy Summary Text
@@ -602,7 +695,7 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
             showToast('Na-kopya na ang summary!', 'fa-solid fa-copy');
         });
 
-        // Toast Helper
+        // Toast Notification Helper
         function showToast(message, iconClass = 'fa-solid fa-circle-check') {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMsg');
@@ -620,16 +713,7 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
             }, 2500);
         }
 
-        // LocalStorage & History Logic
-        function getHistory() {
-            return JSON.parse(localStorage.getItem('lalamove_enhanced_logs') || '[]');
-        }
-
-        function saveHistory(logs) {
-            localStorage.setItem('lalamove_enhanced_logs', JSON.stringify(logs));
-        }
-
-        // Filter Logic (Day, Week, Month, All)
+        // Period Filtering Logic
         function filterLogs(logs) {
             const now = new Date();
 
@@ -641,7 +725,6 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
                 }
 
                 if (activeFilter === 'week') {
-                    // Check if within current week (Sunday to Saturday)
                     const startOfWeek = new Date(now);
                     startOfWeek.setDate(now.getDate() - now.getDay());
                     startOfWeek.setHours(0, 0, 0, 0);
@@ -661,12 +744,11 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
             });
         }
 
-        // Render Table and Period Summary Banner
+        // Render Logs Table and Filter Summary Banner
         function renderHistoryAndSummary() {
             const allLogs = getHistory();
             const filteredLogs = filterLogs(allLogs);
 
-            // 1. Compute Period Totals
             let totGross = 0;
             let totTips = 0;
             let totComm = 0;
@@ -688,7 +770,7 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
             const totalRevenue = totGross + totTips;
             const avgPerKm = totKm > 0 ? (totNet / totKm) : 0;
 
-            // Update Banner Displays
+            // Update Banner
             filterTotalGross.innerText = formatPHP(totalRevenue);
             filterTotalNet.innerText = formatPHP(totNet);
             filterTotalLiters.innerText = totLiters.toFixed(2) + ' L';
@@ -696,7 +778,7 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
             filterTotalKm.innerText = totKm.toFixed(1) + ' KM';
             filterAvgPerKm.innerText = `${formatPHP(avgPerKm)} / KM`;
 
-            // 2. Render Table Rows
+            // Render Table
             historyTableBody.innerHTML = '';
 
             if (filteredLogs.length === 0) {
@@ -706,11 +788,21 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
 
             emptyHistoryMsg.classList.add('hidden');
 
-            filteredLogs.forEach((log) => {
+            filteredLogs.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach((log) => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-800/40 transition";
+                tr.className = "hover:bg-slate-800/40 transition cursor-pointer";
+                tr.onclick = (e) => {
+                    // Prevent row click when delete button is pressed
+                    if (e.target.closest('button')) return;
+                    rideDateInput.value = log.date;
+                    checkAndLoadDateRecord();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+
                 tr.innerHTML = `
-                    <td class="py-3 px-3 font-semibold text-white whitespace-nowrap">${log.date}</td>
+                    <td class="py-3 px-3 font-semibold text-white whitespace-nowrap flex items-center gap-1.5">
+                        <i class="fa-solid fa-calendar text-[10px] text-amber-500"></i> ${log.date}
+                    </td>
                     <td class="py-3 px-3 font-medium text-slate-200">${formatPHP(log.gross)}</td>
                     <td class="py-3 px-3 text-cyan-400">+${formatPHP(log.tip)}</td>
                     <td class="py-3 px-3 text-rose-400">-${formatPHP(log.commissionFee)}</td>
@@ -718,7 +810,7 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
                     <td class="py-3 px-3 text-indigo-300">${(log.distance || 0).toFixed(1)} KM</td>
                     <td class="py-3 px-3 font-bold text-emerald-400">${formatPHP(log.netEarnings)}</td>
                     <td class="py-3 px-3 text-right">
-                        <button onclick="deleteLog('${log.id}')" class="text-slate-500 hover:text-rose-400 transition p-1" title="Burahin">
+                        <button onclick="deleteLogById('${log.id}', '${log.date}')" class="text-slate-500 hover:text-rose-400 transition p-1" title="Burahin">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </td>
@@ -727,10 +819,18 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
             });
         }
 
-        // Add Entry to Log
+        // Save Trip Log
         saveTripBtn.addEventListener('click', () => {
-            const logs = getHistory();
+            let logs = getHistory();
             const selectedDate = rideDateInput.value || new Date().toISOString().split('T')[0];
+
+            if (!currentCalculations.gross && currentCalculations.gross !== 0) {
+                alert('Paki-input ang gross fare!');
+                return;
+            }
+
+            // Remove existing record for this date if overwriting
+            logs = logs.filter(log => log.date !== selectedDate);
 
             const newLog = {
                 id: Date.now().toString(),
@@ -740,55 +840,70 @@ MALINIS NA KITA: ${formatPHP(netEarnings)}
                 commRate: currentCalculations.commRate,
                 commissionFee: currentCalculations.commissionFee,
                 distance: currentCalculations.distance,
+                gasPrice: currentCalculations.gasPrice,
                 gasLiters: currentCalculations.gasLiters,
                 gasCost: currentCalculations.gasCost,
-                netEarnings: currentCalculations.netEarnings
+                netEarnings: currentCalculations.netEarnings,
+                calculationMode: calculationMode,
+                fuelEfficiency: parseFloat(fuelEfficiencyInput.value) || 30
             };
 
             logs.unshift(newLog);
             saveHistory(logs);
+
+            showToast(`Na-save ang record para sa ${selectedDate}!`, 'fa-solid fa-floppy-disk');
+
+            // Reset inputs for next entry & update displays
+            resetInputsOnly();
+            checkAndLoadDateRecord();
             renderHistoryAndSummary();
-            showToast('Na-save na sa biyahe history log!', 'fa-solid fa-bookmark');
         });
 
-        // Delete Single Entry
-        window.deleteLog = function(id) {
-            let logs = getHistory();
-            logs = logs.filter(log => log.id !== id);
-            saveHistory(logs);
-            renderHistoryAndSummary();
-            showToast('Na-bura na ang biyahe.', 'fa-solid fa-trash-can');
+        // Delete Log by ID
+        window.deleteLogById = function(id, dateStr) {
+            if (confirm(`Burahin ang record ng ${dateStr}?`)) {
+                let logs = getHistory();
+                logs = logs.filter(log => log.id !== id);
+                saveHistory(logs);
+
+                if (rideDateInput.value === dateStr) {
+                    checkAndLoadDateRecord();
+                }
+
+                renderHistoryAndSummary();
+                showToast(`Na-bura na ang record ng ${dateStr}.`, 'fa-solid fa-trash-can');
+            }
         };
 
         // Clear All Logs
         clearHistoryBtn.addEventListener('click', () => {
             if (confirm('Sigurado ka bang gusto mong burahin ang LAHAT ng saved trip logs?')) {
                 localStorage.removeItem('lalamove_enhanced_logs');
+                checkAndLoadDateRecord();
                 renderHistoryAndSummary();
                 showToast('Nabura na ang lahat ng logs!', 'fa-solid fa-trash-can');
             }
         });
 
-        // Filter Buttons Switch Listener
+        // Filter Switcher Event Listeners
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.filter-btn').forEach(b => {
-                    b.className = "filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition";
+                    b.className = "filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition whitespace-nowrap";
                 });
-                e.target.className = "filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-950 bg-amber-500 transition";
+                e.target.className = "filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-950 bg-amber-500 transition whitespace-nowrap";
 
                 activeFilter = e.target.getAttribute('data-filter');
                 renderHistoryAndSummary();
             });
         });
 
-        // Initial Load setup
+        // Initial Load Setup
         window.addEventListener('DOMContentLoaded', () => {
             setTodayDate();
-            calculateEarnings();
+            checkAndLoadDateRecord();
             renderHistoryAndSummary();
         });
     </script>
 </body>
 </html>
-```
