@@ -487,9 +487,10 @@
         let lockoutUntil = null;
         let inactivityTimer = null;
 
-        const todayStr = new Date().toISOString().split('T')[0];
-        document.getElementById('tripDate').value = todayStr;
-        document.getElementById('monthPicker').value = todayStr.substring(0, 7);
+        // Laging i-set sa kasalukuyang petsa ngayon (Today) ang app pagbukas
+        const getTodayString = () => new Date().toISOString().split('T')[0];
+        document.getElementById('tripDate').value = getTodayString();
+        document.getElementById('monthPicker').value = getTodayString().substring(0, 7);
 
         // Helper para linisin ang profile UI bago mag-load ang bagong user
         function resetProfileUI() {
@@ -684,13 +685,15 @@
         window.onmousemove = resetInactivityTimer;
         window.onkeypress = resetInactivityTimer;
 
-        // Auth Observer (CLEAN RESET IMPLEMENTED)
+        // Auth Observer (FORCED TODAY DATE SET UPON LOGIN)
         onAuthStateChanged(auth, async user => {
             if (user) {
                 currentUser = user;
                 currentUserRole = 'user'; 
 
-                // Linisin muna ang lumang UI bago i-load ang data ng bagong user
+                // Laging ibalik sa kasalukuyang petsa (Today) tuwing mag-lalog in
+                document.getElementById('tripDate').value = getTodayString();
+
                 resetProfileUI();
 
                 document.getElementById('authContainer').classList.add('hidden');
