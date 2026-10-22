@@ -491,6 +491,16 @@
         document.getElementById('tripDate').value = todayStr;
         document.getElementById('monthPicker').value = todayStr.substring(0, 7);
 
+        // Helper para linisin ang profile UI bago mag-load ang bagong user
+        function resetProfileUI() {
+            document.getElementById('profileFullName').value = '';
+            document.getElementById('profilePhone').value = '';
+            document.getElementById('profileDob').value = '';
+            profileBase64 = '';
+            document.getElementById('profileImagePreview').src = 'https://via.placeholder.com/120';
+            document.getElementById('userAvatarHeader').src = 'https://via.placeholder.com/40';
+        }
+
         // Privacy Helper Masking
         function maskEmail(email) {
             if (!email) return '';
@@ -674,15 +684,19 @@
         window.onmousemove = resetInactivityTimer;
         window.onkeypress = resetInactivityTimer;
 
-        // Auth Observer
+        // Auth Observer (CLEAN RESET IMPLEMENTED)
         onAuthStateChanged(auth, async user => {
             if (user) {
                 currentUser = user;
+                currentUserRole = 'user'; 
+
+                // Linisin muna ang lumang UI bago i-load ang data ng bagong user
+                resetProfileUI();
+
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('appDashboard').classList.remove('hidden');
                 document.getElementById('userEmailDisplay').innerText = isPrivacyHidden ? maskEmail(user.email) : user.email;
 
-                // Hide Admin button by default
                 document.getElementById('navAdminBtn').classList.add('hidden');
 
                 await setDoc(doc(db, 'users', user.uid), {
@@ -695,6 +709,7 @@
                 if (userSnap.exists()) {
                     const data = userSnap.data();
                     currentUserRole = data.role || 'user';
+
                     document.getElementById('profileFullName').value = data.fullName || '';
                     document.getElementById('profilePhone').value = data.phone || '';
                     document.getElementById('profileDob').value = data.dob || '';
@@ -713,6 +728,9 @@
                 listenToUserTrips();
             } else {
                 currentUser = null;
+                currentUserRole = 'user';
+                resetProfileUI();
+                document.getElementById('navAdminBtn').classList.add('hidden');
                 document.getElementById('authContainer').classList.remove('hidden');
                 document.getElementById('appDashboard').classList.add('hidden');
             }
@@ -755,7 +773,7 @@
             reader.readAsDataURL(file);
         };
 
-        // Profile Save Handler (Updated with setDoc merge)
+        // Profile Save Handler
         window.saveUserProfile = async function() {
             if (!currentUser) return alert('Kailangan mong mag-login muna.');
 
