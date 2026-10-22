@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tl">
 <head>
@@ -488,8 +487,9 @@
         let lockoutUntil = null;
         let inactivityTimer = null;
 
-        // Laging i-set sa kasalukuyang petsa ngayon (Today) ang app pagbukas
-        const getTodayString = () => new Date().toISOString().split('T')[0];
+        // ACCURATE LOCAL TIME DATE FIX: Gamit ang sv-SE format para sumunod sa Philippine Local Date (YYYY-MM-DD)
+        const getTodayString = () => new Date().toLocaleDateString('sv-SE');
+        
         document.getElementById('tripDate').value = getTodayString();
         document.getElementById('monthPicker').value = getTodayString().substring(0, 7);
 
@@ -686,13 +686,17 @@
         window.onmousemove = resetInactivityTimer;
         window.onkeypress = resetInactivityTimer;
 
-        // Auth Observer (FORCED TODAY DATE SET UPON LOGIN)
+        // Auth Observer (STRICT ROLE ACCESS AND LOCAL DATE ASSIGNMENT)
         onAuthStateChanged(auth, async user => {
             if (user) {
                 currentUser = user;
-                currentUserRole = 'user'; 
+                currentUserRole = 'user'; // Explicitly reset to user role first
 
-                // Laging ibalik sa kasalukuyang petsa (Today) tuwing mag-lalog in
+                // Siguraduhing tago muna ang Admin Button at Calculator View lang ang naka-focus
+                document.getElementById('navAdminBtn').classList.add('hidden');
+                window.switchTab('calc');
+
+                // Laging ibalik sa tamang lokal na petsa ngayong araw
                 document.getElementById('tripDate').value = getTodayString();
 
                 resetProfileUI();
@@ -700,8 +704,6 @@
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('appDashboard').classList.remove('hidden');
                 document.getElementById('userEmailDisplay').innerText = isPrivacyHidden ? maskEmail(user.email) : user.email;
-
-                document.getElementById('navAdminBtn').classList.add('hidden');
 
                 await setDoc(doc(db, 'users', user.uid), {
                     email: user.email,
@@ -712,6 +714,8 @@
                 const userSnap = await getDoc(doc(db, 'users', user.uid));
                 if (userSnap.exists()) {
                     const data = userSnap.data();
+                    
+                    // Kunin ang tunay na role mula sa database
                     currentUserRole = data.role || 'user';
 
                     document.getElementById('profileFullName').value = data.fullName || '';
@@ -724,6 +728,7 @@
                     }
                 }
 
+                // Lalabas LAMANG ang Admin Panel button kung saktong 'admin' ang role sa database document
                 if (currentUserRole === 'admin') {
                     document.getElementById('navAdminBtn').classList.remove('hidden');
                     listenToAllUsersForAdmin();
