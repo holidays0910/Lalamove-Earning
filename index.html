@@ -112,7 +112,13 @@
                     <h1 class="text-lg font-bold text-orange-500 flex items-center gap-2">
                         <i class="fa-solid fa-motorcycle"></i> Rider Partner App
                     </h1>
-                    <p id="userEmailDisplay" class="text-xs text-slate-400"></p>
+                    <!-- Email Display with Demo Hide Icon Toggle -->
+                    <div class="flex items-center gap-2">
+                        <p id="userEmailDisplay" class="text-xs text-slate-400"></p>
+                        <button onclick="togglePrivacyMode()" title="Hide Info for Demo" class="text-slate-400 hover:text-orange-400 transition text-xs">
+                            <i id="privacyEyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -475,6 +481,7 @@
         let currentFilter = 'day';
         let gasMode = 'auto';
         let profileBase64 = '';
+        let isPrivacyHidden = false;
 
         let failedLoginAttempts = 0;
         let lockoutUntil = null;
@@ -483,6 +490,30 @@
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('tripDate').value = todayStr;
         document.getElementById('monthPicker').value = todayStr.substring(0, 7);
+
+        // Privacy Helper Masking
+        function maskEmail(email) {
+            if (!email) return '';
+            const parts = email.split('@');
+            if (parts[0].length <= 3) {
+                return '***@' + parts[1];
+            }
+            return parts[0].substring(0, 2) + '••••' + parts[0].substring(parts[0].length - 2) + '@' + parts[1];
+        }
+
+        window.togglePrivacyMode = function() {
+            isPrivacyHidden = !isPrivacyHidden;
+            const eyeIcon = document.getElementById('privacyEyeIcon');
+            if (isPrivacyHidden) {
+                eyeIcon.className = 'fa-solid fa-eye-slash text-orange-400';
+            } else {
+                eyeIcon.className = 'fa-solid fa-eye';
+            }
+            if (currentUser) {
+                document.getElementById('userEmailDisplay').innerText = isPrivacyHidden ? maskEmail(currentUser.email) : currentUser.email;
+            }
+            window.renderAdminUsersTable();
+        };
 
         // Global Handlers
         window.switchAuthMode = function(mode) {
@@ -649,7 +680,7 @@
                 currentUser = user;
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('appDashboard').classList.remove('hidden');
-                document.getElementById('userEmailDisplay').innerText = user.email;
+                document.getElementById('userEmailDisplay').innerText = isPrivacyHidden ? maskEmail(user.email) : user.email;
 
                 // Hide Admin button by default
                 document.getElementById('navAdminBtn').classList.add('hidden');
@@ -786,6 +817,7 @@
 
         window.renderAdminUsersTable = function() {
             const tbody = document.getElementById('adminUsersTable');
+            if (!tbody) return;
             tbody.innerHTML = '';
             const search = document.getElementById('adminUserSearch').value.toLowerCase();
 
@@ -798,20 +830,24 @@
                     ? `<span class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 text-[10px]"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Online</span>`
                     : `<span class="bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full text-[10px]">Offline</span>`;
 
+                const displayEmail = isPrivacyHidden ? maskEmail(u.email) : u.email;
+                const displayUid = isPrivacyHidden ? uid.substring(0, 5) + '••••' : uid;
+                const displayPhone = isPrivacyHidden && u.phone ? '09•••••••••' : (u.phone || '-');
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50 transition">
                         <td class="p-3 font-medium text-slate-200">
                             <div class="flex items-center gap-2">
                                 <img src="${u.photoUrl || 'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full object-cover border border-slate-700">
                                 <div>
-                                    <div>${u.email}</div>
-                                    <div class="text-[10px] text-slate-500">${uid}</div>
+                                    <div>${displayEmail}</div>
+                                    <div class="text-[10px] text-slate-500">${displayUid}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="p-3 text-slate-300">
                             <div>${u.fullName || '<i>Walang Pangalan</i>'}</div>
-                            <div class="text-[10px] text-slate-400">${u.phone || '-'}</div>
+                            <div class="text-[10px] text-slate-400">${displayPhone}</div>
                         </td>
                         <td class="p-3">${statusBadge}</td>
                         <td class="p-3 font-bold ${u.role === 'admin' ? 'text-purple-400' : 'text-slate-400'}">${(u.role || 'user').toUpperCase()}</td>
