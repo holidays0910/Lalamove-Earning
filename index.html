@@ -1,0 +1,794 @@
+```html
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rider Kita & Gas Tracker - Lalamove Calculator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-12">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 shadow-lg">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500 text-slate-950 p-2.5 rounded-xl shadow-lg shadow-amber-500/20 font-black">
+                    <i class="fa-solid fa-motorcycle text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold text-white tracking-wide">Rider Kita & Gas Tracker</h1>
+                    <p class="text-xs text-slate-400">Lalamove & Delivery Rider Ledger</p>
+                </div>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 px-3 py-1 rounded-full text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-calculator text-amber-500"></i> Auto-Compute
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 mt-6 space-y-6">
+
+        <!-- Input Form and Live Summary Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Column: Ride Input Form -->
+            <section class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-5">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="text-base font-semibold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-amber-500"></i> Detalye ng Biyahe
+                    </h2>
+                    <button type="button" id="resetBtn" class="text-xs text-slate-400 hover:text-amber-400 transition flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-right"></i> Reset
+                    </button>
+                </div>
+
+                <form id="calculatorForm" class="space-y-4" onsubmit="return false;">
+                    
+                    <!-- Date Picker Input -->
+                    <div>
+                        <label for="rideDate" class="block text-xs font-medium text-slate-300 mb-1">
+                            Petsa ng Biyahe (Date)
+                        </label>
+                        <div class="relative">
+                            <input type="date" id="rideDate"
+                                class="w-full pl-3 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Gross Fare & Tips -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="grossEarnings" class="block text-xs font-medium text-slate-300 mb-1">
+                                Kabuuang Pamasahe / Gross Fare (₱) <span class="text-amber-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-medium">₱</span>
+                                <input type="number" id="grossEarnings" value="240" min="0" step="any"
+                                    class="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition text-sm" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="tips" class="block text-xs font-medium text-slate-300 mb-1">
+                                Tip mula sa Customer (₱)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-medium">₱</span>
+                                <input type="number" id="tips" value="0" min="0" step="any"
+                                    class="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition text-sm" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Commission Rate -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="commissionRate" class="text-xs font-medium text-slate-300">
+                                Lalamove Commission Cut (%)
+                            </label>
+                            <span id="commissionRateValue" class="text-xs font-bold text-amber-400">20%</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="range" id="commissionRate" min="0" max="30" value="20" step="0.5"
+                                class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            <input type="number" id="commissionNum" value="20" min="0" max="100" step="0.1"
+                                class="w-20 px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-center text-xs text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <!-- Distance & Gas Price -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="distanceKm" class="block text-xs font-medium text-slate-300 mb-1">
+                                Tinakbong Distansya (KM)
+                            </label>
+                            <div class="relative">
+                                <input type="number" id="distanceKm" value="15" min="0" step="any"
+                                    class="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition text-sm" placeholder="0">
+                                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 text-xs font-medium">KM</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="gasPrice" class="block text-xs font-medium text-slate-300 mb-1">
+                                Presyo ng Gas (₱ / Liter)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-medium">₱</span>
+                                <input type="number" id="gasPrice" value="88" min="0" step="any"
+                                    class="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition text-sm" placeholder="88.00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fuel Calculation Mode Selector -->
+                    <div class="border-t border-slate-800 pt-3">
+                        <label class="block text-xs font-medium text-slate-300 mb-2">Paraan ng Kuwenta ng Gas:</label>
+                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                            <button type="button" id="modeEfficiency" class="py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-950 bg-amber-500 shadow transition">
+                                <i class="fa-solid fa-gauge-high mr-1"></i> Via KM / Liter
+                            </button>
+                            <button type="button" id="modeManual" class="py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">
+                                <i class="fa-solid fa-gas-pump mr-1"></i> Manual Liters
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Fuel Inputs -->
+                    <div id="efficiencyInputGroup" class="space-y-1">
+                        <label for="fuelEfficiency" class="block text-xs font-medium text-slate-300">
+                            Consumption Rate ng Motor (KM kada Litro)
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="fuelEfficiency" value="30" min="1" step="any"
+                                class="w-full pl-3 pr-14 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition text-sm" placeholder="30">
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 text-xs font-medium">KM/L</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 italic">Halimbawa: 30 KM/L (Sa 15 KM, gagamit ng 0.50 Litro).</p>
+                    </div>
+
+                    <div id="manualInputGroup" class="space-y-1 hidden">
+                        <label for="manualGasLiters" class="block text-xs font-medium text-slate-300">
+                            Nagamit / Na-karga na Gas (Liters)
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="manualGasLiters" value="0.5" min="0" step="any"
+                                class="w-full pl-3 pr-14 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-semibold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition text-sm" placeholder="0.5">
+                            <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 text-xs font-medium">Liters</span>
+                        </div>
+                    </div>
+
+                    <!-- Save Record Button -->
+                    <button type="button" id="saveTripBtn" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 active:scale-[0.99]">
+                        <i class="fa-solid fa-plus-circle text-base"></i> I-save ang Biyaheng Ito
+                    </button>
+                </form>
+            </section>
+
+            <!-- Right Column: Instant Live Computation Card -->
+            <section class="lg:col-span-5 space-y-5">
+                
+                <!-- Main Net Income Card -->
+                <div class="bg-gradient-to-br from-emerald-600 to-teal-900 rounded-2xl p-6 shadow-2xl text-white border border-emerald-500/30 relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl font-bold">₱</div>
+                    <div class="text-xs uppercase font-bold text-emerald-200 tracking-wider mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-wallet"></i> Malinis na Kita (Net Profit)
+                    </div>
+                    <div class="text-4xl font-extrabold tracking-tight my-2" id="netEarningsDisplay">
+                        ₱148.00
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-emerald-100/90 pt-3 border-t border-emerald-400/30 mt-3">
+                        <span>Profit Margin: <strong id="marginDisplay" class="text-white">61.7%</strong></span>
+                        <span>Kita per KM: <strong id="perKmDisplay" class="text-white">₱9.87 / KM</strong></span>
+                    </div>
+                </div>
+
+                <!-- Instant Breakdown Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center justify-between">
+                        <span>Buod ng Input Kwenta</span>
+                        <i class="fa-solid fa-receipt text-slate-500"></i>
+                    </h3>
+
+                    <div class="space-y-2 text-xs sm:text-sm">
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-plus text-emerald-400 text-[10px]"></i> Gross Fare
+                            </span>
+                            <span id="grossBreakdown" class="font-semibold text-white">₱240.00</span>
+                        </div>
+
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-gift text-cyan-400 text-[10px]"></i> Customer Tip
+                            </span>
+                            <span id="tipsBreakdown" class="font-semibold text-cyan-400">+₱0.00</span>
+                        </div>
+
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-circle-minus text-rose-400 text-[10px]"></i> Lalamove Cut (<span id="commissionPercentBreakdown">20%</span>)
+                            </span>
+                            <span id="commissionBreakdown" class="font-semibold text-rose-400">-₱48.00</span>
+                        </div>
+
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-gas-pump text-amber-400 text-[10px]"></i> Gas Cost (<span id="gasLitersBreakdown">0.50 L</span>)
+                            </span>
+                            <span id="gasCostBreakdown" class="font-semibold text-amber-400">-₱44.00</span>
+                        </div>
+
+                        <div class="border-t border-slate-800 pt-2 flex justify-between items-center font-bold text-sm sm:text-base text-white">
+                            <span>Net Take-Home:</span>
+                            <span id="netBreakdown" class="text-emerald-400">₱148.00</span>
+                        </div>
+                    </div>
+
+                    <button type="button" id="copySummaryBtn" class="w-full mt-2 py-2 px-3 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-copy"></i> Kopyahin ang Buod
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Filter Controls & Period Summary Section -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            
+            <!-- Period Filter Controls Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-amber-500"></i> Buod ng Kita at Gas Consumption
+                    </h3>
+                    <p class="text-xs text-slate-400">I-filter ang na-record na biyahe ayon sa panahon</p>
+                </div>
+
+                <!-- Filter Mode Selector -->
+                <div class="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs">
+                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-950 bg-amber-500 transition" data-filter="day">
+                        Ngayong Araw
+                    </button>
+                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition" data-filter="week">
+                        Ngayong Linggo
+                    </button>
+                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition" data-filter="month">
+                        Ngayong Buwan
+                    </button>
+                    <button type="button" class="filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition" data-filter="all">
+                        Lahat
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Period Summary Banner Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                
+                <!-- Total Gross -->
+                <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl">
+                    <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-money-bill-wave text-cyan-400"></i> Total Gross
+                    </div>
+                    <div id="filterTotalGross" class="text-lg font-bold text-white">₱0.00</div>
+                    <div class="text-[10px] text-slate-500">Kasamang Tip</div>
+                </div>
+
+                <!-- Total Net Kita -->
+                <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl">
+                    <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-coins text-emerald-400"></i> Net Kita
+                    </div>
+                    <div id="filterTotalNet" class="text-lg font-bold text-emerald-400">₱0.00</div>
+                    <div class="text-[10px] text-slate-500">Malinis na Profit</div>
+                </div>
+
+                <!-- Total Gas Liters -->
+                <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl">
+                    <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-gas-pump text-amber-400"></i> Gas (Liters)
+                    </div>
+                    <div id="filterTotalLiters" class="text-lg font-bold text-amber-400">0.00 L</div>
+                    <div id="filterTotalGasCost" class="text-[10px] text-slate-400">₱0.00 kabuuang gastos</div>
+                </div>
+
+                <!-- Total Distance -->
+                <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl">
+                    <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-route text-indigo-400"></i> Distansya
+                    </div>
+                    <div id="filterTotalKm" class="text-lg font-bold text-indigo-300">0 KM</div>
+                    <div class="text-[10px] text-slate-500">Kabuuang Tinakbo</div>
+                </div>
+
+                <!-- Average Efficiency -->
+                <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl col-span-2 sm:col-span-1">
+                    <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-gauge text-purple-400"></i> Average / KM
+                    </div>
+                    <div id="filterAvgPerKm" class="text-lg font-bold text-purple-300">₱0.00 / KM</div>
+                    <div class="text-[10px] text-slate-500">Net Efficiency</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logged Entries History Table -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> Talahanayan ng mga Biyahe Log
+                </h3>
+                <button type="button" id="clearHistoryBtn" class="text-xs text-rose-400 hover:text-rose-300 transition flex items-center gap-1">
+                    <i class="fa-solid fa-trash-can"></i> Burahin Lahat
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+                            <th class="py-3 px-3">Petsa</th>
+                            <th class="py-3 px-3">Fare</th>
+                            <th class="py-3 px-3">Tip</th>
+                            <th class="py-3 px-3">Commission</th>
+                            <th class="py-3 px-3">Gas (L / ₱)</th>
+                            <th class="py-3 px-3">Distansya</th>
+                            <th class="py-3 px-3">Net Kita</th>
+                            <th class="py-3 px-3 text-right">Aksyon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody" class="divide-y divide-slate-800/60 text-slate-300">
+                        <!-- Dynamic Log Rows -->
+                    </tbody>
+                </table>
+                <p id="emptyHistoryMsg" class="text-center text-slate-500 text-xs py-8">
+                    Walang na-record na biyahe para sa napiling filter. Mag-add ng bagong record sa taas.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 border border-amber-500/50 text-white px-4 py-3 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-amber-400 text-lg"></i>
+        <span id="toastMsg" class="text-xs font-medium">Na-kopya na sa clipboard!</span>
+    </div>
+
+    <script>
+        // DOM Elements
+        const rideDateInput = document.getElementById('rideDate');
+        const grossEarningsInput = document.getElementById('grossEarnings');
+        const tipsInput = document.getElementById('tips');
+        const commissionRateInput = document.getElementById('commissionRate');
+        const commissionNumInput = document.getElementById('commissionNum');
+        const commissionRateValue = document.getElementById('commissionRateValue');
+        const distanceKmInput = document.getElementById('distanceKm');
+        const gasPriceInput = document.getElementById('gasPrice');
+        const fuelEfficiencyInput = document.getElementById('fuelEfficiency');
+        const manualGasLitersInput = document.getElementById('manualGasLiters');
+
+        const modeEfficiencyBtn = document.getElementById('modeEfficiency');
+        const modeManualBtn = document.getElementById('modeManual');
+        const efficiencyInputGroup = document.getElementById('efficiencyInputGroup');
+        const manualInputGroup = document.getElementById('manualInputGroup');
+
+        const resetBtn = document.getElementById('resetBtn');
+        const saveTripBtn = document.getElementById('saveTripBtn');
+        const copySummaryBtn = document.getElementById('copySummaryBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+        // Output Display Elements
+        const netEarningsDisplay = document.getElementById('netEarningsDisplay');
+        const marginDisplay = document.getElementById('marginDisplay');
+        const perKmDisplay = document.getElementById('perKmDisplay');
+
+        const grossBreakdown = document.getElementById('grossBreakdown');
+        const tipsBreakdown = document.getElementById('tipsBreakdown');
+        const commissionPercentBreakdown = document.getElementById('commissionPercentBreakdown');
+        const commissionBreakdown = document.getElementById('commissionBreakdown');
+        const gasLitersBreakdown = document.getElementById('gasLitersBreakdown');
+        const gasCostBreakdown = document.getElementById('gasCostBreakdown');
+        const netBreakdown = document.getElementById('netBreakdown');
+
+        // Filter Summary Banner Elements
+        const filterTotalGross = document.getElementById('filterTotalGross');
+        const filterTotalNet = document.getElementById('filterTotalNet');
+        const filterTotalLiters = document.getElementById('filterTotalLiters');
+        const filterTotalGasCost = document.getElementById('filterTotalGasCost');
+        const filterTotalKm = document.getElementById('filterTotalKm');
+        const filterAvgPerKm = document.getElementById('filterAvgPerKm');
+
+        const historyTableBody = document.getElementById('historyTableBody');
+        const emptyHistoryMsg = document.getElementById('emptyHistoryMsg');
+
+        // Application State
+        let calculationMode = 'efficiency'; // 'efficiency' or 'manual'
+        let activeFilter = 'day'; // 'day', 'week', 'month', 'all'
+        let currentCalculations = {};
+
+        // Helper: Format Currency PHP
+        function formatPHP(amount) {
+            return '₱' + (parseFloat(amount) || 0).toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // Set Today's Date in YYYY-MM-DD
+        function setTodayDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            rideDateInput.value = `${year}-${month}-${day}`;
+        }
+
+        // Calculation Core Function
+        function calculateEarnings() {
+            const gross = parseFloat(grossEarningsInput.value) || 0;
+            const tip = parseFloat(tipsInput.value) || 0;
+            const commRate = parseFloat(commissionRateInput.value) || 0;
+            const distance = parseFloat(distanceKmInput.value) || 0;
+            const gasPrice = parseFloat(gasPriceInput.value) || 0;
+            const efficiency = parseFloat(fuelEfficiencyInput.value) || 1;
+            const manualLiters = parseFloat(manualGasLitersInput.value) || 0;
+
+            // 1. Commission Fee
+            const commissionFee = gross * (commRate / 100);
+
+            // 2. Gas Consumed
+            let gasLiters = 0;
+            if (calculationMode === 'efficiency') {
+                gasLiters = efficiency > 0 ? (distance / efficiency) : 0;
+            } else {
+                gasLiters = manualLiters;
+            }
+
+            // 3. Gas Cost
+            const gasCost = gasLiters * gasPrice;
+
+            // 4. Net Income
+            const totalIncome = gross + tip;
+            const totalExpenses = commissionFee + gasCost;
+            const netEarnings = totalIncome - totalExpenses;
+
+            // 5. Efficiency Metrics
+            const profitMargin = totalIncome > 0 ? (netEarnings / totalIncome) * 100 : 0;
+            const netPerKm = distance > 0 ? (netEarnings / distance) : 0;
+
+            currentCalculations = {
+                gross,
+                tip,
+                commRate,
+                commissionFee,
+                distance,
+                gasPrice,
+                gasLiters,
+                gasCost,
+                totalIncome,
+                netEarnings,
+                profitMargin,
+                netPerKm
+            };
+
+            updateLiveDisplay();
+        }
+
+        // Update Live Calculation Cards
+        function updateLiveDisplay() {
+            const {
+                gross,
+                tip,
+                commRate,
+                commissionFee,
+                gasLiters,
+                gasCost,
+                netEarnings,
+                profitMargin,
+                netPerKm
+            } = currentCalculations;
+
+            netEarningsDisplay.innerText = formatPHP(netEarnings);
+            marginDisplay.innerText = profitMargin.toFixed(1) + '%';
+            perKmDisplay.innerText = formatPHP(netPerKm) + ' / KM';
+
+            grossBreakdown.innerText = formatPHP(gross);
+            tipsBreakdown.innerText = '+' + formatPHP(tip);
+            commissionPercentBreakdown.innerText = commRate + '%';
+            commissionBreakdown.innerText = '-' + formatPHP(commissionFee);
+            gasLitersBreakdown.innerText = gasLiters.toFixed(2) + ' L';
+            gasCostBreakdown.innerText = '-' + formatPHP(gasCost);
+            netBreakdown.innerText = formatPHP(netEarnings);
+        }
+
+        // Mode Switching
+        modeEfficiencyBtn.addEventListener('click', () => {
+            calculationMode = 'efficiency';
+            modeEfficiencyBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-950 bg-amber-500 shadow transition";
+            modeManualBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition";
+            efficiencyInputGroup.classList.remove('hidden');
+            manualInputGroup.classList.add('hidden');
+            calculateEarnings();
+        });
+
+        modeManualBtn.addEventListener('click', () => {
+            calculationMode = 'manual';
+            modeManualBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-950 bg-amber-500 shadow transition";
+            modeEfficiencyBtn.className = "py-1.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition";
+            manualInputGroup.classList.remove('hidden');
+            efficiencyInputGroup.classList.add('hidden');
+            calculateEarnings();
+        });
+
+        // Commission Input Sync
+        commissionRateInput.addEventListener('input', (e) => {
+            commissionNumInput.value = e.target.value;
+            commissionRateValue.innerText = e.target.value + '%';
+            calculateEarnings();
+        });
+
+        commissionNumInput.addEventListener('input', (e) => {
+            commissionRateInput.value = e.target.value;
+            commissionRateValue.innerText = e.target.value + '%';
+            calculateEarnings();
+        });
+
+        // Event Listeners for Live Computation
+        [grossEarningsInput, tipsInput, distanceKmInput, gasPriceInput, fuelEfficiencyInput, manualGasLitersInput].forEach(input => {
+            input.addEventListener('input', calculateEarnings);
+        });
+
+        // Reset Button Action
+        resetBtn.addEventListener('click', () => {
+            setTodayDate();
+            grossEarningsInput.value = 240;
+            tipsInput.value = 0;
+            commissionRateInput.value = 20;
+            commissionNumInput.value = 20;
+            commissionRateValue.innerText = '20%';
+            distanceKmInput.value = 15;
+            gasPriceInput.value = 88;
+            fuelEfficiencyInput.value = 30;
+            manualGasLitersInput.value = 0.5;
+            calculateEarnings();
+            showToast('Nabalik na sa default values!', 'fa-solid fa-rotate-right');
+        });
+
+        // Copy Summary Text
+        copySummaryBtn.addEventListener('click', () => {
+            const dateVal = rideDateInput.value;
+            const { gross, tip, commRate, commissionFee, gasLiters, gasPrice, gasCost, netEarnings } = currentCalculations;
+
+            const summaryText = `--- LALAMOVE KITA BREAKDOWN (${dateVal}) ---
+Gross Fare: ${formatPHP(gross)}
+Tip: ${formatPHP(tip)}
+Commission (${commRate}%): -${formatPHP(commissionFee)}
+Gas (${gasLiters.toFixed(2)}L @ ₱${gasPrice}/L): -${formatPHP(gasCost)}
+-------------------------------
+MALINIS NA KITA: ${formatPHP(netEarnings)}
+-------------------------------`;
+
+            const tempInput = document.createElement('textarea');
+            tempInput.value = summaryText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            showToast('Na-kopya na ang summary!', 'fa-solid fa-copy');
+        });
+
+        // Toast Helper
+        function showToast(message, iconClass = 'fa-solid fa-circle-check') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            toastIcon.className = iconClass + ' text-amber-400 text-lg';
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        // LocalStorage & History Logic
+        function getHistory() {
+            return JSON.parse(localStorage.getItem('lalamove_enhanced_logs') || '[]');
+        }
+
+        function saveHistory(logs) {
+            localStorage.setItem('lalamove_enhanced_logs', JSON.stringify(logs));
+        }
+
+        // Filter Logic (Day, Week, Month, All)
+        function filterLogs(logs) {
+            const now = new Date();
+
+            return logs.filter(log => {
+                const logDate = new Date(log.date);
+
+                if (activeFilter === 'day') {
+                    return logDate.toDateString() === now.toDateString();
+                }
+
+                if (activeFilter === 'week') {
+                    // Check if within current week (Sunday to Saturday)
+                    const startOfWeek = new Date(now);
+                    startOfWeek.setDate(now.getDate() - now.getDay());
+                    startOfWeek.setHours(0, 0, 0, 0);
+
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
+                    endOfWeek.setHours(23, 59, 59, 999);
+
+                    return logDate >= startOfWeek && logDate <= endOfWeek;
+                }
+
+                if (activeFilter === 'month') {
+                    return logDate.getMonth() === now.getMonth() && logDate.getFullYear() === now.getFullYear();
+                }
+
+                return true; // 'all'
+            });
+        }
+
+        // Render Table and Period Summary Banner
+        function renderHistoryAndSummary() {
+            const allLogs = getHistory();
+            const filteredLogs = filterLogs(allLogs);
+
+            // 1. Compute Period Totals
+            let totGross = 0;
+            let totTips = 0;
+            let totComm = 0;
+            let totLiters = 0;
+            let totGasCost = 0;
+            let totKm = 0;
+            let totNet = 0;
+
+            filteredLogs.forEach(log => {
+                totGross += parseFloat(log.gross) || 0;
+                totTips += parseFloat(log.tip) || 0;
+                totComm += parseFloat(log.commissionFee) || 0;
+                totLiters += parseFloat(log.gasLiters) || 0;
+                totGasCost += parseFloat(log.gasCost) || 0;
+                totKm += parseFloat(log.distance) || 0;
+                totNet += parseFloat(log.netEarnings) || 0;
+            });
+
+            const totalRevenue = totGross + totTips;
+            const avgPerKm = totKm > 0 ? (totNet / totKm) : 0;
+
+            // Update Banner Displays
+            filterTotalGross.innerText = formatPHP(totalRevenue);
+            filterTotalNet.innerText = formatPHP(totNet);
+            filterTotalLiters.innerText = totLiters.toFixed(2) + ' L';
+            filterTotalGasCost.innerText = `${formatPHP(totGasCost)} kabuuang gastos`;
+            filterTotalKm.innerText = totKm.toFixed(1) + ' KM';
+            filterAvgPerKm.innerText = `${formatPHP(avgPerKm)} / KM`;
+
+            // 2. Render Table Rows
+            historyTableBody.innerHTML = '';
+
+            if (filteredLogs.length === 0) {
+                emptyHistoryMsg.classList.remove('hidden');
+                return;
+            }
+
+            emptyHistoryMsg.classList.add('hidden');
+
+            filteredLogs.forEach((log) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition";
+                tr.innerHTML = `
+                    <td class="py-3 px-3 font-semibold text-white whitespace-nowrap">${log.date}</td>
+                    <td class="py-3 px-3 font-medium text-slate-200">${formatPHP(log.gross)}</td>
+                    <td class="py-3 px-3 text-cyan-400">+${formatPHP(log.tip)}</td>
+                    <td class="py-3 px-3 text-rose-400">-${formatPHP(log.commissionFee)}</td>
+                    <td class="py-3 px-3 text-amber-400">${(log.gasLiters || 0).toFixed(2)}L (${formatPHP(log.gasCost)})</td>
+                    <td class="py-3 px-3 text-indigo-300">${(log.distance || 0).toFixed(1)} KM</td>
+                    <td class="py-3 px-3 font-bold text-emerald-400">${formatPHP(log.netEarnings)}</td>
+                    <td class="py-3 px-3 text-right">
+                        <button onclick="deleteLog('${log.id}')" class="text-slate-500 hover:text-rose-400 transition p-1" title="Burahin">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                historyTableBody.appendChild(tr);
+            });
+        }
+
+        // Add Entry to Log
+        saveTripBtn.addEventListener('click', () => {
+            const logs = getHistory();
+            const selectedDate = rideDateInput.value || new Date().toISOString().split('T')[0];
+
+            const newLog = {
+                id: Date.now().toString(),
+                date: selectedDate,
+                gross: currentCalculations.gross,
+                tip: currentCalculations.tip,
+                commRate: currentCalculations.commRate,
+                commissionFee: currentCalculations.commissionFee,
+                distance: currentCalculations.distance,
+                gasLiters: currentCalculations.gasLiters,
+                gasCost: currentCalculations.gasCost,
+                netEarnings: currentCalculations.netEarnings
+            };
+
+            logs.unshift(newLog);
+            saveHistory(logs);
+            renderHistoryAndSummary();
+            showToast('Na-save na sa biyahe history log!', 'fa-solid fa-bookmark');
+        });
+
+        // Delete Single Entry
+        window.deleteLog = function(id) {
+            let logs = getHistory();
+            logs = logs.filter(log => log.id !== id);
+            saveHistory(logs);
+            renderHistoryAndSummary();
+            showToast('Na-bura na ang biyahe.', 'fa-solid fa-trash-can');
+        };
+
+        // Clear All Logs
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm('Sigurado ka bang gusto mong burahin ang LAHAT ng saved trip logs?')) {
+                localStorage.removeItem('lalamove_enhanced_logs');
+                renderHistoryAndSummary();
+                showToast('Nabura na ang lahat ng logs!', 'fa-solid fa-trash-can');
+            }
+        });
+
+        // Filter Buttons Switch Listener
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => {
+                    b.className = "filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition";
+                });
+                e.target.className = "filter-btn px-3 py-1.5 rounded-lg font-semibold text-slate-950 bg-amber-500 transition";
+
+                activeFilter = e.target.getAttribute('data-filter');
+                renderHistoryAndSummary();
+            });
+        });
+
+        // Initial Load setup
+        window.addEventListener('DOMContentLoaded', () => {
+            setTodayDate();
+            calculateEarnings();
+            renderHistoryAndSummary();
+        });
+    </script>
+</body>
+</html>
+```
