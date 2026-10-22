@@ -750,7 +750,13 @@
             }
         });
 
+        // FRONT-END TAB GUARD: Harangin ang sinumang susubok mag-access ng 'admin' tab kung hindi tunay na admin
         window.switchTab = function(tab) {
+            if (tab === 'admin' && currentUserRole !== 'admin') {
+                alert('Access Denied: Ang Admin Panel ay para lamang sa awtorisadong administrator.');
+                tab = 'calc'; // Force redirect pabalik sa calculator
+            }
+
             document.getElementById('viewCalc').classList.toggle('hidden', tab !== 'calc');
             document.getElementById('viewProfile').classList.toggle('hidden', tab !== 'profile');
             document.getElementById('viewAdmin').classList.toggle('hidden', tab !== 'admin');
