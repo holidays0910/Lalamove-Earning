@@ -265,7 +265,7 @@
                     </div>
                 </div>
 
-                <!-- Summary Cards Grid (Kasama na ang Total 20% Commission Cut sa ibaba) -->
+                <!-- Summary Cards Grid (Kasama na ang Tip at 20% Commission Cut) -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div class="glass-card p-3.5 rounded-2xl">
                         <span class="text-xs text-slate-400 block mb-1">Gross Income</span>
@@ -306,6 +306,7 @@
                                     <th class="p-2">Gross</th>
                                     <th class="p-2">Gas</th>
                                     <th class="p-2">Commission</th>
+                                    <th class="p-2">Tip</th>
                                     <th class="p-2">Net Profit</th>
                                 </tr>
                             </thead>
@@ -328,6 +329,7 @@
                                     <th class="p-2.5">Gross</th>
                                     <th class="p-2.5">Gas</th>
                                     <th class="p-2.5">Comm. Cut</th>
+                                    <th class="p-2.5">Tip</th>
                                     <th class="p-2.5">Net</th>
                                     <th class="p-2.5 text-center">Aksyon</th>
                                 </tr>
@@ -1360,11 +1362,12 @@
 
                 const mon = getMonday(new Date(dateKey)).toISOString().split('T')[0];
                 if (!weeklyGroups[mon]) {
-                    weeklyGroups[mon] = { gross: 0, gasCost: 0, commVal: 0, netProfit: 0 };
+                    weeklyGroups[mon] = { gross: 0, gasCost: 0, commVal: 0, tips: 0, netProfit: 0 };
                 }
                 weeklyGroups[mon].gross += item.gross || 0;
                 weeklyGroups[mon].gasCost += item.gasCost || 0;
                 weeklyGroups[mon].commVal += item.commVal || 0;
+                weeklyGroups[mon].tips += item.tip || 0;
                 weeklyGroups[mon].netProfit += item.netProfit || 0;
             });
 
@@ -1392,6 +1395,7 @@
                             <td class="p-2 text-white">₱${group.gross.toFixed(2)}</td>
                             <td class="p-2 text-red-400">₱${group.gasCost.toFixed(2)}</td>
                             <td class="p-2 text-red-400">₱${group.commVal.toFixed(2)}</td>
+                            <td class="p-2 text-amber-400">₱${group.tips.toFixed(2)}</td>
                             <td class="p-2 text-emerald-400 font-bold">₱${group.netProfit.toFixed(2)}</td>
                         </tr>
                     `;
@@ -1403,6 +1407,7 @@
                         <td class="p-2 text-white">₱${gross.toFixed(2)}</td>
                         <td class="p-2 text-red-400">₱${gasCost.toFixed(2)}</td>
                         <td class="p-2 text-red-400">₱${commissionTotal.toFixed(2)}</td>
+                        <td class="p-2 text-amber-400">₱${tips.toFixed(2)}</td>
                         <td class="p-2 text-emerald-400">₱${net.toFixed(2)}</td>
                     </tr>
                 `;
@@ -1413,7 +1418,7 @@
             document.getElementById('logCount').innerText = `${filteredDates.length} records`;
 
             if (filteredDates.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Walang nahanap na record sa napiling filter.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Walang nahanap na record sa napiling filter.</td></tr>`;
                 return;
             }
 
@@ -1425,6 +1430,7 @@
                         <td class="p-2.5 text-white">₱${(item.gross || 0).toFixed(2)}</td>
                         <td class="p-2.5 text-red-400">₱${(item.gasCost || 0).toFixed(2)}</td>
                         <td class="p-2.5 text-red-400">₱${(item.commVal || 0).toFixed(2)}</td>
+                        <td class="p-2.5 text-amber-400">₱${(item.tip || 0).toFixed(2)}</td>
                         <td class="p-2.5 font-bold text-emerald-400">₱${(item.netProfit || 0).toFixed(2)}</td>
                         <td class="p-2.5 text-center">
                             <button onclick="deleteTrip('${d}')" class="text-red-400 hover:text-red-300 px-2 py-1 rounded">
