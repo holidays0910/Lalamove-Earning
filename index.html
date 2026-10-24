@@ -85,6 +85,11 @@
             <button id="googleAuthBtn" onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-3 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm">
                 <i class="fa-brands fa-google text-red-500"></i> Mag-sign in gamit ang Google
             </button>
+
+            <!-- Guest Mode Button -->
+            <button id="guestAuthBtn" onclick="handleGuestSignIn()" class="w-full bg-slate-700/80 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl border border-slate-600 transition flex items-center justify-center gap-2 text-xs">
+                <i class="fa-solid fa-user-ninja text-orange-400"></i> Mag-patuloy bilang Guest (Demo)
+            </button>
         </div>
 
         <!-- Forgot Password Modal -->
@@ -447,6 +452,7 @@
             getAuth, 
             signInWithEmailAndPassword, 
             createUserWithEmailAndPassword, 
+            signInAnonymously,
             signOut, 
             onAuthStateChanged, 
             sendPasswordResetEmail, 
@@ -514,7 +520,7 @@
 
         // Privacy Helper Masking
         function maskEmail(email) {
-            if (!email) return '';
+            if (!email) return 'Guest User';
             const parts = email.split('@');
             if (parts[0].length <= 3) {
                 return '***@' + parts[1];
@@ -531,7 +537,9 @@
                 eyeIcon.className = 'fa-solid fa-eye';
             }
             if (currentUser) {
-                document.getElementById('userEmailDisplay').innerText = isPrivacyHidden ? maskEmail(currentUser.email) : currentUser.email;
+                document.getElementById('userEmailDisplay').innerText = currentUser.isAnonymous 
+                    ? 'Guest User (Demo Mode)' 
+                    : (isPrivacyHidden ? maskEmail(currentUser.email) : currentUser.email);
             }
             window.renderAdminUsersTable();
         };
@@ -548,6 +556,7 @@
             document.getElementById('rememberMeGroup').classList.toggle('hidden', isReg);
             document.getElementById('dividerAuth').classList.toggle('hidden', isReg);
             document.getElementById('googleAuthBtn').classList.toggle('hidden', isReg);
+            document.getElementById('guestAuthBtn').classList.toggle('hidden', isReg);
             document.getElementById('authAlert').classList.add('hidden');
         };
 
@@ -655,6 +664,26 @@
             }
         };
 
+        // GUEST LOGIN HANDLER
+        window.handleGuestSignIn = async function() {
+            try {
+                await setPersistence(auth, browserSessionPersistence);
+                const res = await signInAnonymously(auth);
+                await setDoc(doc(db, 'users', res.user.uid), {
+                    email: 'guest@demo.local',
+                    role: 'guest',
+                    fullName: 'Guest Demo User',
+                    phone: '',
+                    dob: '',
+                    photoUrl: '',
+                    isOnline: true,
+                    lastSeen: serverTimestamp()
+                }, { merge: true });
+            } catch (err) {
+                window.showAlert('Guest Sign-In Error: Siguraduhing naka-enable ang Anonymous Sign-in sa Firebase Console.', true);
+            }
+        };
+
         window.handleLogout = async function() {
             if (currentUser) {
                 await setDoc(doc(db, 'users', currentUser.uid), {
@@ -710,10 +739,12 @@
 
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('appDashboard').classList.remove('hidden');
-                document.getElementById('userEmailDisplay').innerText = isPrivacyHidden ? maskEmail(user.email) : user.email;
+                
+                const emailLabel = user.isAnonymous ? 'Guest User (Demo Mode)' : (isPrivacyHidden ? maskEmail(user.email) : user.email);
+                document.getElementById('userEmailDisplay').innerText = emailLabel;
 
                 await setDoc(doc(db, 'users', user.uid), {
-                    email: user.email,
+                    email: user.isAnonymous ? 'guest@demo.local' : user.email,
                     isOnline: true,
                     lastSeen: serverTimestamp()
                 }, { merge: true }).catch(() => {});
@@ -724,7 +755,7 @@
                     
                     currentUserRole = data.role || 'user';
 
-                    document.getElementById('profileFullName').value = data.fullName || '';
+                    document.getElementById('profileFullName').value = data.fullName || (user.isAnonymous ? 'Guest Demo User' : '');
                     document.getElementById('profilePhone').value = data.phone || '';
                     document.getElementById('profileDob').value = data.dob || '';
                     if (data.photoUrl) {
@@ -750,7 +781,7 @@
             }
         });
 
-        // FRONT-END TAB GUARD: Harangin ang sinumang susubok mag-access ng 'admin' tab kung hindi tunay na admin
+        // FRONT-END TAB GUARD
         window.switchTab = function(tab) {
             if (tab === 'admin' && currentUserRole !== 'admin') {
                 alert('Access Denied: Ang Admin Panel ay para lamang sa awtorisadong administrator.');
@@ -802,7 +833,7 @@
             const dob = document.getElementById('profileDob').value;
 
             const payload = {
-                email: currentUser.email,
+                email: currentUser.isAnonymous ? 'guest@demo.local' : currentUser.email,
                 fullName: fullName,
                 phone: phone,
                 dob: dob,
