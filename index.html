@@ -265,7 +265,6 @@
                     </div>
                 </div>
 
-                <!-- Summary Cards Grid (Kasama na ang Tip at 20% Commission Cut) -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div class="glass-card p-3.5 rounded-2xl">
                         <span class="text-xs text-slate-400 block mb-1">Gross Income</span>
@@ -537,6 +536,8 @@
         let lockoutUntil = null;
         let inactivityTimer = null;
 
+        const ADMIN_EMAIL = "sona101097@gmail.com";
+
         const getTodayString = () => new Date().toLocaleDateString('sv-SE');
         
         document.getElementById('tripDate').value = getTodayString();
@@ -669,9 +670,10 @@
                     if (password.length < 6) return window.showAlert('Dapat hindi bababa sa 6 characters ang password.', true);
 
                     const userCred = await createUserWithEmailAndPassword(auth, email, password);
+                    const assignedRole = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
                     await setDoc(doc(db, 'users', userCred.user.uid), {
                         email: email,
-                        role: 'user',
+                        role: assignedRole,
                         status: 'active',
                         fullName: '',
                         phone: '',
@@ -705,10 +707,11 @@
                 const res = await signInWithPopup(auth, provider);
                 const userDocRef = doc(db, 'users', res.user.uid);
                 const snap = await getDoc(userDocRef);
+                const assignedRole = (res.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
                 if (!snap.exists()) {
                     await setDoc(userDocRef, {
                         email: res.user.email,
-                        role: 'user',
+                        role: assignedRole,
                         status: 'active',
                         fullName: res.user.displayName || '',
                         phone: '',
@@ -717,6 +720,8 @@
                         isOnline: true,
                         lastSeen: serverTimestamp()
                     }, { merge: true });
+                } else if (assignedRole === 'admin' && snap.data().role !== 'admin') {
+                    await updateDoc(userDocRef, { role: 'admin' });
                 }
                 await recordLoginActivity(res.user.uid, res.user.email);
             } catch (err) {
@@ -792,12 +797,18 @@
                 
                 if (userSnap.exists()) {
                     const userData = userSnap.data();
-                    if (userData.status === 'blocked') {
+                    if (userData.status === 'blocked' && user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
                         alert('Naka-block ang iyong account. Hindi ka makakapag-login. Makipag-ugnayan sa Administrator.');
                         await signOut(auth);
                         return;
                     }
                     currentUserRole = userData.role || 'user';
+                }
+
+                // Automaikong gawing admin ang email mo kahit ano pa ang nakalagay sa database
+                if (user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+                    currentUserRole = 'admin';
+                    await setDoc(userRef, { role: 'admin', status: 'active' }, { merge: true }).catch(() => {});
                 }
 
                 currentUser = user;
@@ -839,10 +850,17 @@
 
                 listenToUserTrips();
 
+                // Live Listener na may ABSOLUTE ADMIN SAFETY GUARD para hindi ka kailanman ma-logout
                 onSnapshot(userRef, docSnap => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
+                        const isThisAdminEmail = currentUser && currentUser.email && currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+                        
                         if (data.forceLogout && currentUser) {
+                            if (currentUserRole === 'admin' || isThisAdminEmail) {
+                                console.log("Admin safety guard triggered: Remote logout ignored for admin account.");
+                                return;
+                            }
                             alert('Pwersahang nai-logout ang iyong session ng Administrator.');
                             window.handleLogout();
                         }
@@ -860,7 +878,7 @@
         });
 
         window.switchTab = function(tab) {
-            if (tab === 'admin' && currentUserRole !== 'admin') {
+            if (tab === 'admin' && currentUserRole !== 'admin' && (!currentUser || currentUser.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase())) {
                 alert('Access Denied: Ang Admin Panel ay para lamang sa awtorisadong administrator.');
                 tab = 'calc';
             }
@@ -1043,6 +1061,7 @@
                 const displayPhone = isPrivacyHidden && u.phone ? '09•••••••••' : (u.phone || '-');
 
                 const isBlocked = u.status === 'blocked';
+                const isTargetAdmin = u.email && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50 transition">
@@ -1060,10 +1079,10 @@
                             <div class="text-[10px] text-slate-400">${displayPhone}</div>
                         </td>
                         <td class="p-3">${isOnlineBadge}</td>
-                        <td class="p-3 font-bold ${u.role === 'admin' ? 'text-purple-400' : 'text-slate-400'}">${(u.role || 'user').toUpperCase()}</td>
+                        <td class="p-3 font-bold ${isTargetAdmin || u.role === 'admin' ? 'text-purple-400' : 'text-slate-400'}">${(isTargetAdmin ? 'admin' : (u.role || 'user')).toUpperCase()}</td>
                         
                         <td class="p-3 text-center">
-                            ${u.role === 'admin' ? '<span class="text-slate-500 italic text-[10px]">Admin Always Allowed</span>' : `
+                            ${isTargetAdmin ? '<span class="text-slate-500 italic text-[10px]">Main Admin Always Allowed</span>' : `
                                 <label class="inline-flex items-center cursor-pointer gap-2">
                                     <input type="checkbox" onchange="toggleUserBlockStatus('${uid}', this.checked)" ${!isBlocked ? 'checked' : ''} class="w-4 h-4 text-emerald-500 rounded bg-slate-700 border-slate-600 focus:ring-emerald-500">
                                     <span class="text-xs font-bold ${!isBlocked ? 'text-emerald-400' : 'text-red-400'}">
@@ -1074,9 +1093,11 @@
                         </td>
 
                         <td class="p-3 text-center space-x-1">
-                            <button onclick="adminRemoteLogout('${uid}')" title="Remote Logout (Pwersahang I-logout)" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 p-1.5 rounded-lg border border-red-500/30">
-                                <i class="fa-solid fa-power-off"></i>
-                            </button>
+                            ${isTargetAdmin ? '<span class="text-slate-500 italic text-[10px]">Protected</span>' : `
+                                <button onclick="adminRemoteLogout('${uid}')" title="Remote Logout (Pwersahang I-logout)" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 p-1.5 rounded-lg border border-red-500/30">
+                                    <i class="fa-solid fa-power-off"></i>
+                                </button>
+                            `}
                             <button onclick="adminTriggerReset('${u.email}')" title="Ipadala ang Reset Password Email" class="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 p-1.5 rounded-lg border border-orange-500/30">
                                 <i class="fa-solid fa-key"></i>
                             </button>
