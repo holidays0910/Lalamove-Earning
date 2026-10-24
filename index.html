@@ -433,8 +433,9 @@
                             <tr>
                                 <th class="p-3">User / Email</th>
                                 <th class="p-3">Pangalan / CP No.</th>
-                                <th class="p-3">Status</th>
+                                <th class="p-3">Activity Status</th>
                                 <th class="p-3">Role</th>
+                                <th class="p-3 text-center">Login Access (Allowed/Blocked)</th>
                                 <th class="p-3 text-center">Aksyon</th>
                             </tr>
                         </thead>
@@ -502,13 +503,12 @@
         let lockoutUntil = null;
         let inactivityTimer = null;
 
-        // ACCURATE LOCAL TIME DATE FIX: Gamit ang sv-SE format para sumunod sa Philippine Local Date (YYYY-MM-DD)
+        // ACCURATE LOCAL TIME DATE FIX
         const getTodayString = () => new Date().toLocaleDateString('sv-SE');
         
         document.getElementById('tripDate').value = getTodayString();
         document.getElementById('monthPicker').value = getTodayString().substring(0, 7);
 
-        // Helper para linisin ang profile UI bago mag-load ang bagong user
         function resetProfileUI() {
             document.getElementById('profileFullName').value = '';
             document.getElementById('profilePhone').value = '';
@@ -518,7 +518,6 @@
             document.getElementById('userAvatarHeader').src = 'https://via.placeholder.com/40';
         }
 
-        // Privacy Helper Masking
         function maskEmail(email) {
             if (!email) return 'Guest User';
             const parts = email.split('@');
@@ -544,7 +543,6 @@
             window.renderAdminUsersTable();
         };
 
-        // Global Handlers
         window.switchAuthMode = function(mode) {
             authMode = mode;
             const isReg = mode === 'register';
@@ -588,7 +586,7 @@
             }, 4000);
         }
 
-        // Auth
+        // Auth Submit
         window.handleAuthSubmit = async function() {
             if (lockoutUntil && new Date() < lockoutUntil) {
                 const remainingSecs = Math.ceil((lockoutUntil - new Date()) / 1000);
@@ -616,6 +614,7 @@
                     await setDoc(doc(db, 'users', userCred.user.uid), {
                         email: email,
                         role: 'user',
+                        status: 'active', // Default: Active
                         fullName: '',
                         phone: '',
                         dob: '',
@@ -651,6 +650,7 @@
                     await setDoc(userDocRef, {
                         email: res.user.email,
                         role: 'user',
+                        status: 'active',
                         fullName: res.user.displayName || '',
                         phone: '',
                         dob: '',
@@ -664,7 +664,6 @@
             }
         };
 
-        // GUEST LOGIN HANDLER
         window.handleGuestSignIn = async function() {
             try {
                 await setPersistence(auth, browserSessionPersistence);
@@ -672,6 +671,7 @@
                 await setDoc(doc(db, 'users', res.user.uid), {
                     email: 'guest@demo.local',
                     role: 'guest',
+                    status: 'active',
                     fullName: 'Guest Demo User',
                     phone: '',
                     dob: '',
@@ -724,17 +724,26 @@
         window.onmousemove = resetInactivityTimer;
         window.onkeypress = resetInactivityTimer;
 
-        // Auth Observer (STRICT ROLE ACCESS AND LOCAL DATE ASSIGNMENT)
+        // Auth Observer with Strict Blocked Guard
         onAuthStateChanged(auth, async user => {
             if (user) {
-                currentUser = user;
-                currentUserRole = 'user'; // Explicitly reset to user role first
+                // SURIIN KUNG NAKA-BLOCK ANG ACCOUNT
+                const userSnap = await getDoc(doc(db, 'users', user.uid));
+                if (userSnap.exists()) {
+                    const userData = userSnap.data();
+                    if (userData.status === 'blocked') {
+                        alert('Naka-block ang iyong account. Hindi ka makakapag-login. Makipag-ugnayan sa Administrator.');
+                        await signOut(auth);
+                        return;
+                    }
+                    currentUserRole = userData.role || 'user';
+                }
 
+                currentUser = user;
                 document.getElementById('navAdminBtn').classList.add('hidden');
                 window.switchTab('calc');
 
                 document.getElementById('tripDate').value = getTodayString();
-
                 resetProfileUI();
 
                 document.getElementById('authContainer').classList.add('hidden');
@@ -749,12 +758,8 @@
                     lastSeen: serverTimestamp()
                 }, { merge: true }).catch(() => {});
 
-                const userSnap = await getDoc(doc(db, 'users', user.uid));
                 if (userSnap.exists()) {
                     const data = userSnap.data();
-                    
-                    currentUserRole = data.role || 'user';
-
                     document.getElementById('profileFullName').value = data.fullName || (user.isAnonymous ? 'Guest Demo User' : '');
                     document.getElementById('profilePhone').value = data.phone || '';
                     document.getElementById('profileDob').value = data.dob || '';
@@ -785,7 +790,7 @@
         window.switchTab = function(tab) {
             if (tab === 'admin' && currentUserRole !== 'admin') {
                 alert('Access Denied: Ang Admin Panel ay para lamang sa awtorisadong administrator.');
-                tab = 'calc'; // Force redirect pabalik sa calculator
+                tab = 'calc';
             }
 
             document.getElementById('viewCalc').classList.toggle('hidden', tab !== 'calc');
@@ -824,7 +829,6 @@
             reader.readAsDataURL(file);
         };
 
-        // Profile Save Handler
         window.saveUserProfile = async function() {
             if (!currentUser) return alert('Kailangan mong mag-login muna.');
 
@@ -850,7 +854,6 @@
             }
         };
 
-        // Listeners
         function listenToUserTrips() {
             if (!currentUser) return;
             const tripsRef = collection(db, 'users', currentUser.uid, 'trips');
@@ -885,6 +888,7 @@
             });
         }
 
+        // ADMIN TABLE WITH CHECKBOX / BLOCK ACCESS TOGGLE
         window.renderAdminUsersTable = function() {
             const tbody = document.getElementById('adminUsersTable');
             if (!tbody) return;
@@ -896,13 +900,15 @@
                 const searchKey = `${u.email} ${u.fullName} ${u.phone}`.toLowerCase();
                 if (search && !searchKey.includes(search)) return;
 
-                const statusBadge = u.isOnline 
+                const isOnlineBadge = u.isOnline 
                     ? `<span class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 text-[10px]"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Online</span>`
                     : `<span class="bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full text-[10px]">Offline</span>`;
 
                 const displayEmail = isPrivacyHidden ? maskEmail(u.email) : u.email;
                 const displayUid = isPrivacyHidden ? uid.substring(0, 5) + '••••' : uid;
                 const displayPhone = isPrivacyHidden && u.phone ? '09•••••••••' : (u.phone || '-');
+
+                const isBlocked = u.status === 'blocked';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50 transition">
@@ -919,8 +925,21 @@
                             <div>${u.fullName || '<i>Walang Pangalan</i>'}</div>
                             <div class="text-[10px] text-slate-400">${displayPhone}</div>
                         </td>
-                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3">${isOnlineBadge}</td>
                         <td class="p-3 font-bold ${u.role === 'admin' ? 'text-purple-400' : 'text-slate-400'}">${(u.role || 'user').toUpperCase()}</td>
+                        
+                        <!-- BLOCK/ALLOW CHECKBOX TOGGLE -->
+                        <td class="p-3 text-center">
+                            ${u.role === 'admin' ? '<span class="text-slate-500 italic text-[10px]">Admin Always Allowed</span>' : `
+                                <label class="inline-flex items-center cursor-pointer gap-2">
+                                    <input type="checkbox" onchange="toggleUserBlockStatus('${uid}', this.checked)" ${!isBlocked ? 'checked' : ''} class="w-4 h-4 text-emerald-500 rounded bg-slate-700 border-slate-600 focus:ring-emerald-500">
+                                    <span class="text-xs font-bold ${!isBlocked ? 'text-emerald-400' : 'text-red-400'}">
+                                        ${!isBlocked ? 'Allowed (Active)' : 'Blocked (No Access)'}
+                                    </span>
+                                </label>
+                            `}
+                        </td>
+
                         <td class="p-3 text-center space-x-1">
                             <button onclick="adminTriggerReset('${u.email}')" title="Ipadala ang Reset Password Email" class="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 p-1.5 rounded-lg border border-orange-500/30">
                                 <i class="fa-solid fa-key"></i>
@@ -929,6 +948,19 @@
                     </tr>
                 `;
             });
+        };
+
+        // FUNCTION PARA MAG-TOGGLE NG BLOCK STATUS SA FIRESTORE
+        window.toggleUserBlockStatus = async function(targetUid, isAllowed) {
+            const newStatus = isAllowed ? 'active' : 'blocked';
+            try {
+                await updateDoc(doc(db, 'users', targetUid), {
+                    status: newStatus
+                });
+                alert(`Na-update ang status ng user sa ${newStatus.toUpperCase()}`);
+            } catch (err) {
+                alert('Error sa pag-update ng status: ' + err.message);
+            }
         };
 
         window.adminTriggerReset = async function(email) {
@@ -1109,15 +1141,12 @@
             return new Date(date.setDate(diff));
         }
 
-        // Awtomatikong mag-populate ng Weekly Options base sa mga totoong may data
         function populateWeeklyDropdown() {
             const select = document.getElementById('weekPicker');
             const savedValue = select.value;
             select.innerHTML = '';
 
             const weeklyMap = {};
-            
-            // Isama palagi ang kasalukuyang linggo (This Week)
             const currentMon = getMonday(new Date()).toISOString().split('T')[0];
             weeklyMap[currentMon] = true;
 
