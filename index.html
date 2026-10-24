@@ -408,7 +408,7 @@
                         <h2 class="text-base font-bold text-slate-200 flex items-center gap-2">
                             <i class="fa-solid fa-chart-line text-orange-400"></i> Daily Active Users (DAU) Logins Report
                         </h2>
-                        <p class="text-xs text-slate-400">Suriin kung ilang beses nag-login ang mga user sa napiling hanay ng petsa.</p>
+                        <p class="text-xs text-slate-400">Suriin kung anong petsa huling nag-login ang mga user at ang kabuuang aktibidad nila.</p>
                     </div>
                     <div class="flex items-center gap-2 bg-slate-800 p-2 rounded-xl border border-slate-700 text-xs">
                         <div>
@@ -425,7 +425,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
                         <div>
-                            <span class="text-xs text-slate-400 block">Kabuuang Logins sa Sakop na Petsa</span>
+                            <span class="text-xs text-slate-400 block">Kabuuang Logins ng Lahat</span>
                             <span id="dauTotalLoginsCount" class="text-2xl font-black text-orange-400">0</span>
                         </div>
                         <i class="fa-solid fa-right-to-bracket fa-2x text-slate-600"></i>
@@ -443,9 +443,10 @@
                     <table class="w-full text-xs text-left">
                         <thead class="bg-slate-800/80 text-slate-400 border-b border-slate-700">
                             <tr>
-                                <th class="p-2.5">Petsa (Date)</th>
-                                <th class="p-2.5">Bilang ng Logins</th>
-                                <th class="p-2.5">Mga User na Nag-login</th>
+                                <th class="p-2.5">User / Email</th>
+                                <th class="p-2.5">Pangalan</th>
+                                <th class="p-2.5 text-center">Ilang Beses Nag-login (Count)</th>
+                                <th class="p-2.5">Huling Login (Last Login Date)</th>
                             </tr>
                         </thead>
                         <tbody id="dauReportTable" class="divide-y divide-slate-800"></tbody>
@@ -500,11 +501,11 @@
             doc, 
             setDoc, 
             getDoc,
-            addDoc,
             deleteDoc, 
             onSnapshot,
             serverTimestamp,
             updateDoc,
+            increment,
             deleteField
         } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
@@ -527,7 +528,6 @@
         let currentUserRole = 'user';
         let tripsData = {};
         let allUsersData = {};
-        let allLoginsData = [];
         let currentFilter = 'day';
         let gasMode = 'auto';
         let profileBase64 = '';
@@ -628,21 +628,38 @@
             }, 4000);
         }
 
-        async function recordLoginActivity(userId, userEmail) {
+        // Tinitiyak na nai-update ang user document para sa login count at huling login date
+        async function recordUserLogin(userId, userEmail) {
             try {
-                const now = new Date();
-                const dateOnly = now.toLocaleDateString('sv-SE');
-                const timeOnly = now.toLocaleTimeString('en-GB');
+                const userRef = doc(db, 'users', userId);
+                const nowStr = new Date().toLocaleDateString('sv-SE');
+                const snap = await getDoc(userRef);
                 
-                await addDoc(collection(db, 'login_logs'), {
-                    uid: userId,
-                    email: userEmail || 'guest@demo.local',
-                    date: dateOnly,
-                    timestamp: timeOnly,
-                    createdAt: serverTimestamp()
-                });
+                if (!snap.exists()) {
+                    const assignedRole = (userEmail && userEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
+                    await setDoc(userRef, {
+                        email: userEmail || 'guest@demo.local',
+                        role: assignedRole,
+                        status: 'active',
+                        fullName: '',
+                        phone: '',
+                        dob: '',
+                        photoUrl: '',
+                        isOnline: true,
+                        loginCount: 1,
+                        lastLoginDate: nowStr,
+                        lastSeen: serverTimestamp()
+                    });
+                } else {
+                    await updateDoc(userRef, {
+                        loginCount: increment(1),
+                        lastLoginDate: nowStr,
+                        isOnline: true,
+                        lastSeen: serverTimestamp()
+                    });
+                }
             } catch (err) {
-                console.error("Login log error:", err);
+                console.error("Login tracking error:", err);
             }
         }
 
@@ -664,7 +681,7 @@
                 if (authMode === 'login') {
                     const res = await signInWithEmailAndPassword(auth, email, password);
                     failedLoginAttempts = 0;
-                    await recordLoginActivity(res.user.uid, email);
+                    await recordUserLogin(res.user.uid, email);
                 } else {
                     const confirmPass = document.getElementById('authConfirmPassword').value;
                     if (password !== confirmPass) return window.showAlert('Hindi magkatugma ang mga password.', true);
@@ -681,9 +698,10 @@
                         dob: '',
                         photoUrl: '',
                         isOnline: true,
+                        loginCount: 1,
+                        lastLoginDate: getTodayString(),
                         lastSeen: serverTimestamp()
                     }, { merge: true });
-                    await recordLoginActivity(userCred.user.uid, email);
                     window.showAlert('Account successfully created!');
                 }
             } catch (err) {
@@ -706,25 +724,13 @@
             try {
                 await setPersistence(auth, browserLocalPersistence);
                 const res = await signInWithPopup(auth, provider);
+                const assignedRole = (res.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
+                await recordUserLogin(res.user.uid, res.user.email);
                 const userDocRef = doc(db, 'users', res.user.uid);
                 const snap = await getDoc(userDocRef);
-                const assignedRole = (res.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user';
-                if (!snap.exists()) {
-                    await setDoc(userDocRef, {
-                        email: res.user.email,
-                        role: assignedRole,
-                        status: 'active',
-                        fullName: res.user.displayName || '',
-                        phone: '',
-                        dob: '',
-                        photoUrl: res.user.photoURL || '',
-                        isOnline: true,
-                        lastSeen: serverTimestamp()
-                    }, { merge: true });
-                } else if (assignedRole === 'admin' && snap.data().role !== 'admin') {
+                if (assignedRole === 'admin' && snap.exists() && snap.data().role !== 'admin') {
                     await updateDoc(userDocRef, { role: 'admin' });
                 }
-                await recordLoginActivity(res.user.uid, res.user.email);
             } catch (err) {
                 window.showAlert(err.message, true);
             }
@@ -734,18 +740,7 @@
             try {
                 await setPersistence(auth, browserSessionPersistence);
                 const res = await signInAnonymously(auth);
-                await setDoc(doc(db, 'users', res.user.uid), {
-                    email: 'guest@demo.local',
-                    role: 'guest',
-                    status: 'active',
-                    fullName: 'Guest Demo User',
-                    phone: '',
-                    dob: '',
-                    photoUrl: '',
-                    isOnline: true,
-                    lastSeen: serverTimestamp()
-                }, { merge: true });
-                await recordLoginActivity(res.user.uid, 'guest@demo.local');
+                await recordUserLogin(res.user.uid, 'guest@demo.local');
             } catch (err) {
                 window.showAlert('Guest Sign-In Error: Siguraduhing naka-enable ang Anonymous Sign-in sa Firebase Console.', true);
             }
@@ -798,7 +793,7 @@
                 
                 if (userSnap.exists()) {
                     const userData = userSnap.data();
-                    if (userData.status === 'blocked' && user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+                    if (userData.status === 'blocked' && user.email && user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
                         alert('Naka-block ang iyong account. Hindi ka makakapag-login. Makipag-ugnayan sa Administrator.');
                         await signOut(auth);
                         return;
@@ -845,7 +840,6 @@
                 if (currentUserRole === 'admin') {
                     document.getElementById('navAdminBtn').classList.remove('hidden');
                     listenToAllUsersForAdmin();
-                    listenToLoginLogsForDAU();
                 }
 
                 listenToUserTrips();
@@ -973,16 +967,6 @@
                 document.getElementById('adminOfflineCount').innerText = offline;
 
                 window.renderAdminUsersTable();
-            });
-        }
-
-        function listenToLoginLogsForDAU() {
-            const logsRef = collection(db, 'login_logs');
-            onSnapshot(logsRef, snapshot => {
-                allLoginsData = [];
-                snapshot.forEach(docSnap => {
-                    allLoginsData.push(docSnap.data());
-                });
                 window.renderDauReport();
             });
         }
@@ -999,45 +983,42 @@
             const start = new Date(startDateStr);
             const end = new Date(endDateStr);
 
-            const filteredLogs = allLoginsData.filter(log => {
-                const logDate = new Date(log.date);
-                return logDate >= start && logDate <= end;
-            });
+            let totalLoginsSum = 0;
+            let activeUniqueUsersCount = 0;
+            let rowsHtml = '';
 
-            document.getElementById('dauTotalLoginsCount').innerText = filteredLogs.length;
+            Object.keys(allUsersData).forEach(uid => {
+                const u = allUsersData[uid];
+                const loginCount = u.loginCount || 0;
+                const lastLogin = u.lastLoginDate || 'Walang Record';
 
-            const groupedByDate = {};
-            const uniqueUsersSet = new Set();
-
-            filteredLogs.forEach(log => {
-                uniqueUsersSet.add(log.uid);
-                if (!groupedByDate[log.date]) {
-                    groupedByDate[log.date] = [];
+                // I-check kung pasok sa petsa ang huling login o kung may login count
+                if (loginCount > 0) {
+                    totalLoginsSum += loginCount;
+                    activeUniqueUsersCount++;
                 }
-                groupedByDate[log.date].push(log);
-            });
 
-            document.getElementById('dauUniqueUsersCount').innerText = uniqueUsersSet.size;
+                const displayEmail = isPrivacyHidden ? maskEmail(u.email) : (u.email || 'Guest');
+                const displayName = u.fullName || '<i>Walang Pangalan</i>';
 
-            const sortedDates = Object.keys(groupedByDate).sort().reverse();
-
-            if (sortedDates.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500">Walang naitalang login sa napiling petsa.</td></tr>`;
-                return;
-            }
-
-            sortedDates.forEach(dateKey => {
-                const logsOnThisDay = groupedByDate[dateKey];
-                const emailsOnThisDay = [...new Set(logsOnThisDay.map(l => isPrivacyHidden ? maskEmail(l.email) : l.email))].join(', ');
-
-                tbody.innerHTML += `
+                rowsHtml += `
                     <tr class="hover:bg-slate-800/50 transition">
-                        <td class="p-2.5 font-bold text-orange-400">${dateKey}</td>
-                        <td class="p-2.5 text-white font-semibold">${logsOnThisDay.length} logins</td>
-                        <td class="p-2.5 text-slate-300 text-[11px]">${emailsOnThisDay}</td>
+                        <td class="p-3 font-medium text-slate-200">${displayEmail}</td>
+                        <td class="p-3 text-slate-300">${displayName}</td>
+                        <td class="p-3 text-center font-bold text-orange-400">${loginCount} beses</td>
+                        <td class="p-3 text-emerald-400 font-semibold">${lastLogin}</td>
                     </tr>
                 `;
             });
+
+            document.getElementById('dauTotalLoginsCount').innerText = totalLoginsSum;
+            document.getElementById('dauUniqueUsersCount').innerText = activeUniqueUsersCount;
+
+            if (rowsHtml === '') {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Walang naitalang login sa mga user.</td></tr>`;
+            } else {
+                tbody.innerHTML = rowsHtml;
+            }
         };
 
         window.renderAdminUsersTable = function() {
