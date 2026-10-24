@@ -504,7 +504,8 @@
             deleteDoc, 
             onSnapshot,
             serverTimestamp,
-            updateDoc
+            updateDoc,
+            deleteField
         } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -805,11 +806,17 @@
                     currentUserRole = userData.role || 'user';
                 }
 
-                // Automaikong gawing admin ang email mo kahit ano pa ang nakalagay sa database
                 if (user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
                     currentUserRole = 'admin';
                     await setDoc(userRef, { role: 'admin', status: 'active' }, { merge: true }).catch(() => {});
                 }
+
+                // Linisin agad ang forceLogout flag sa DB kapag matagumpay na nag-login
+                await updateDoc(userRef, {
+                    forceLogout: deleteField(),
+                    isOnline: true,
+                    lastSeen: serverTimestamp()
+                }).catch(() => {});
 
                 currentUser = user;
                 document.getElementById('navAdminBtn').classList.add('hidden');
@@ -823,12 +830,6 @@
                 
                 const emailLabel = user.isAnonymous ? 'Guest User (Demo Mode)' : (isPrivacyHidden ? maskEmail(user.email) : user.email);
                 document.getElementById('userEmailDisplay').innerText = emailLabel;
-
-                await setDoc(userRef, {
-                    email: user.isAnonymous ? 'guest@demo.local' : user.email,
-                    isOnline: true,
-                    lastSeen: serverTimestamp()
-                }, { merge: true }).catch(() => {});
 
                 if (userSnap.exists()) {
                     const data = userSnap.data();
@@ -850,7 +851,7 @@
 
                 listenToUserTrips();
 
-                // Live Listener na may ABSOLUTE ADMIN SAFETY GUARD para hindi ka kailanman ma-logout
+                // Live Listener na may ABSOLUTE ADMIN SAFETY GUARD
                 onSnapshot(userRef, docSnap => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
