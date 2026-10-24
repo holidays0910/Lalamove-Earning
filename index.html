@@ -27,20 +27,17 @@
 
         <div id="authAlert" class="hidden mb-4 p-3 rounded-lg text-sm font-medium text-center"></div>
 
-        <!-- Login / Register Switch Tabs -->
         <div class="flex bg-slate-800 p-1 rounded-xl mb-6 border border-slate-700">
             <button id="tabLoginBtn" onclick="switchAuthMode('login')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-orange-500 text-white transition">Mag-login</button>
             <button id="tabRegisterBtn" onclick="switchAuthMode('register')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 transition">Mag-register</button>
         </div>
 
-        <!-- Auth Form Inputs -->
         <div class="space-y-4">
             <div>
                 <label class="block text-slate-300 text-xs font-bold mb-1">Email Address</label>
                 <input type="email" id="authEmail" class="w-full p-3 rounded-xl input-style text-sm" placeholder="halimbawa@email.com">
             </div>
 
-            <!-- Password with Eye Toggle -->
             <div>
                 <label class="block text-slate-300 text-xs font-bold mb-1">Password</label>
                 <div class="relative">
@@ -52,7 +49,6 @@
                 <span id="passHint" class="hidden text-[10px] text-slate-400 mt-1 block">Minimum na 6 characters.</span>
             </div>
 
-            <!-- Confirm Password (Register Only) -->
             <div id="confirmPasswordGroup" class="hidden">
                 <label class="block text-slate-300 text-xs font-bold mb-1">Kumpirmahin ang Password</label>
                 <div class="relative">
@@ -63,7 +59,6 @@
                 </div>
             </div>
 
-            <!-- Remember Me & Forgot Password -->
             <div id="rememberMeGroup" class="flex items-center justify-between text-xs">
                 <label class="flex items-center gap-2 cursor-pointer text-slate-300">
                     <input type="checkbox" id="rememberMe" class="rounded bg-slate-700 border-slate-600 text-orange-500 focus:ring-orange-500">
@@ -86,13 +81,11 @@
                 <i class="fa-brands fa-google text-red-500"></i> Mag-sign in gamit ang Google
             </button>
 
-            <!-- Guest Mode Button -->
             <button id="guestAuthBtn" onclick="handleGuestSignIn()" class="w-full bg-slate-700/80 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl border border-slate-600 transition flex items-center justify-center gap-2 text-xs">
                 <i class="fa-solid fa-user-ninja text-orange-400"></i> Mag-patuloy bilang Guest (Demo)
             </button>
         </div>
 
-        <!-- Forgot Password Modal -->
         <div id="forgotPasswordForm" class="hidden mt-4 pt-4 border-t border-slate-700">
             <p class="text-slate-300 text-xs mb-3">I-enter ang iyong registered email para padalhan ka ng password reset link.</p>
             <div class="mb-3">
@@ -109,7 +102,6 @@
 
     <!-- Main App Container -->
     <div id="appDashboard" class="hidden max-w-5xl mx-auto px-4 pt-6">
-        <!-- Navigation Header -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center glass-card p-4 rounded-2xl mb-6 gap-4">
             <div class="flex items-center gap-3">
                 <img id="userAvatarHeader" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full border border-orange-500 object-cover">
@@ -117,7 +109,6 @@
                     <h1 class="text-lg font-bold text-orange-500 flex items-center gap-2">
                         <i class="fa-solid fa-motorcycle"></i> Rider Partner App
                     </h1>
-                    <!-- Email Display with Demo Hide Icon Toggle -->
                     <div class="flex items-center gap-2">
                         <p id="userEmailDisplay" class="text-xs text-slate-400"></p>
                         <button onclick="togglePrivacyMode()" title="Hide Info for Demo" class="text-slate-400 hover:text-orange-400 transition text-xs">
@@ -145,7 +136,6 @@
 
         <!-- SECTION 1: CALCULATOR VIEW -->
         <div id="viewCalc" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Form Input Panel -->
             <div class="lg:col-span-1 glass-card p-5 rounded-2xl space-y-4">
                 <div id="calcSuccessAlert" class="hidden p-3 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-xl text-xs font-medium text-center transition-all"></div>
 
@@ -164,7 +154,6 @@
                     </div>
                 </div>
 
-                <!-- Total Income Input with Guide -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Total Income / Kinita (₱)</label>
                     <div class="bg-orange-500/10 border border-orange-500/30 rounded-xl p-2.5 mb-2 text-xs text-orange-300 flex items-start gap-2">
@@ -190,7 +179,6 @@
                     <input type="number" id="distanceKm" oninput="calculate()" class="w-full p-2.5 rounded-xl input-style text-sm" placeholder="0" value="">
                 </div>
 
-                <!-- Gas Calculation Mode Toggle -->
                 <div class="border-t border-slate-700 pt-3">
                     <div class="flex justify-between items-center mb-2">
                         <label class="text-xs font-semibold text-slate-300">Modo sa Gas</label>
@@ -227,7 +215,6 @@
                     </div>
                 </div>
 
-                <!-- Live Quick Calculation Card -->
                 <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1.5 text-xs">
                     <div class="flex justify-between text-slate-400">
                         <span>Lalamove Cut (<span id="calcCommRate">20</span>%):</span>
@@ -252,9 +239,7 @@
                 </button>
             </div>
 
-            <!-- Reports Panel -->
             <div class="lg:col-span-2 space-y-6">
-                <!-- Period Selector -->
                 <div class="glass-card p-4 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-chart-pie text-orange-400"></i>
@@ -268,12 +253,10 @@
                             <button id="btnFilterAll" onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-slate-400">Lahat</button>
                         </div>
                         
-                        <!-- Month Picker -->
                         <div id="monthPickerContainer" class="hidden">
                             <input type="month" id="monthPicker" onchange="renderDashboard()" class="p-1.5 rounded-xl input-style text-xs">
                         </div>
 
-                        <!-- Weekly Dropdown Selector -->
                         <div id="weekPickerContainer" class="hidden">
                             <select id="weekPicker" onchange="renderDashboard()" class="p-1.5 rounded-xl input-style text-xs bg-slate-800 text-orange-400 font-semibold border border-slate-700">
                                 <option value="current">Kasalukuyang Linggo (This Week)</option>
@@ -282,7 +265,7 @@
                     </div>
                 </div>
 
-                <!-- Summary Cards Grid -->
+                <!-- Summary Cards Grid (Kasama na ang Total 20% Commission Cut sa ibaba) -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div class="glass-card p-3.5 rounded-2xl">
                         <span class="text-xs text-slate-400 block mb-1">Gross Income</span>
@@ -298,6 +281,10 @@
                         <span class="text-[10px] text-slate-400 block">(<span id="sumGasLiters">0.0</span> L)</span>
                     </div>
                     <div class="glass-card p-3.5 rounded-2xl">
+                        <span class="text-xs text-slate-400 block mb-1">20% Commission Cut</span>
+                        <span class="text-lg font-extrabold text-red-400">₱<span id="sumCommissionTotal">0.00</span></span>
+                    </div>
+                    <div class="glass-card p-3.5 rounded-2xl">
                         <span class="text-xs text-slate-400 block mb-1">Kabuuang Tip</span>
                         <span class="text-lg font-extrabold text-amber-400">₱<span id="sumTips">0.00</span></span>
                     </div>
@@ -305,13 +292,8 @@
                         <span class="text-xs text-slate-400 block mb-1">Layo (KM)</span>
                         <span class="text-lg font-extrabold text-cyan-400"><span id="sumDistance">0</span> km</span>
                     </div>
-                    <div class="glass-card p-3.5 rounded-2xl">
-                        <span class="text-xs text-slate-400 block mb-1">Kita / KM</span>
-                        <span class="text-lg font-extrabold text-purple-400">₱<span id="sumPerKm">0.00</span></span>
-                    </div>
                 </div>
 
-                <!-- Weekly Monday-Sunday Table -->
                 <div id="weeklyReportContainer" class="hidden glass-card p-4 rounded-2xl">
                     <h3 class="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-calendar-week text-orange-400"></i> Weekly Breakdown (Lunes hanggang Linggo)
@@ -323,6 +305,7 @@
                                     <th class="p-2">Linggo (Lunes)</th>
                                     <th class="p-2">Gross</th>
                                     <th class="p-2">Gas</th>
+                                    <th class="p-2">Commission</th>
                                     <th class="p-2">Net Profit</th>
                                 </tr>
                             </thead>
@@ -332,7 +315,6 @@
                     </div>
                 </div>
 
-                <!-- Trip Logs Table -->
                 <div class="glass-card p-4 rounded-2xl">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-sm font-bold text-slate-200"><i class="fa-solid fa-list mr-2 text-orange-400"></i>Talaan ng mga Byahe</h3>
@@ -345,8 +327,8 @@
                                     <th class="p-2.5">Petsa</th>
                                     <th class="p-2.5">Gross</th>
                                     <th class="p-2.5">Gas</th>
+                                    <th class="p-2.5">Comm. Cut</th>
                                     <th class="p-2.5">Net</th>
-                                    <th class="p-2.5">KM</th>
                                     <th class="p-2.5 text-center">Aksyon</th>
                                 </tr>
                             </thead>
@@ -395,7 +377,6 @@
 
         <!-- SECTION 3: ADMIN PANEL VIEW -->
         <div id="viewAdmin" class="hidden space-y-6">
-            <!-- Summary Online/Offline Tracker -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="glass-card p-4 rounded-2xl flex items-center justify-between">
                     <div>
@@ -420,7 +401,6 @@
                 </div>
             </div>
 
-            <!-- DAILY ACTIVE USERS (DAU) ANALYTICS REPORT SECTION -->
             <div class="glass-card p-5 rounded-2xl space-y-4">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-700 pb-3">
                     <div>
@@ -441,7 +421,6 @@
                     </div>
                 </div>
 
-                <!-- DAU Summary Badge & Table -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
                         <div>
@@ -473,7 +452,6 @@
                 </div>
             </div>
 
-            <!-- Users Management Table -->
             <div class="glass-card p-5 rounded-2xl space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <h2 class="text-lg font-bold text-slate-200"><i class="fa-solid fa-users-gear text-purple-400 mr-2"></i>Pamamahala ng mga User Account</h2>
@@ -499,7 +477,6 @@
         </div>
     </div>
 
-    <!-- Firebase Modular SDK Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
         import { 
@@ -563,7 +540,6 @@
         document.getElementById('tripDate').value = getTodayString();
         document.getElementById('monthPicker').value = getTodayString().substring(0, 7);
 
-        // Itakda ang default DAU date range (Ngayong araw hanggang 7 araw mula ngayon)
         const todayStr = getTodayString();
         document.getElementById('dauStartDate').value = todayStr;
         const nextWeekDate = new Date();
@@ -648,12 +624,11 @@
             }, 4000);
         }
 
-        // Record Login Activity sa Database para sa DAU Report
         async function recordLoginActivity(userId, userEmail) {
             try {
                 const now = new Date();
-                const dateOnly = now.toLocaleDateString('sv-SE'); // YYYY-MM-DD
-                const timeOnly = now.toLocaleTimeString('en-GB'); // HH:MM:SS
+                const dateOnly = now.toLocaleDateString('sv-SE');
+                const timeOnly = now.toLocaleTimeString('en-GB');
                 
                 await addDoc(collection(db, 'login_logs'), {
                     uid: userId,
@@ -808,7 +783,6 @@
         window.onmousemove = resetInactivityTimer;
         window.onkeypress = resetInactivityTimer;
 
-        // Auth Observer with Strict Blocked Guard & Realtime Remote Logout listener
         onAuthStateChanged(auth, async user => {
             if (user) {
                 const userRef = doc(db, 'users', user.uid);
@@ -983,7 +957,6 @@
             });
         }
 
-        // Pakikinig sa login logs para sa DAU Report
         function listenToLoginLogsForDAU() {
             const logsRef = collection(db, 'login_logs');
             onSnapshot(logsRef, snapshot => {
@@ -995,7 +968,6 @@
             });
         }
 
-        // Render Daily Active Users Report batay sa Date Range Picker
         window.renderDauReport = function() {
             const startDateStr = document.getElementById('dauStartDate').value;
             const endDateStr = document.getElementById('dauEndDate').value;
@@ -1008,7 +980,6 @@
             const start = new Date(startDateStr);
             const end = new Date(endDateStr);
 
-            // Salain ang logs ayon sa napiling petsa
             const filteredLogs = allLoginsData.filter(log => {
                 const logDate = new Date(log.date);
                 return logDate >= start && logDate <= end;
@@ -1016,7 +987,6 @@
 
             document.getElementById('dauTotalLoginsCount').innerText = filteredLogs.length;
 
-            // Grupo ayon sa araw (Date)
             const groupedByDate = {};
             const uniqueUsersSet = new Set();
 
@@ -1090,7 +1060,6 @@
                         <td class="p-3">${isOnlineBadge}</td>
                         <td class="p-3 font-bold ${u.role === 'admin' ? 'text-purple-400' : 'text-slate-400'}">${(u.role || 'user').toUpperCase()}</td>
                         
-                        <!-- BLOCK/ALLOW CHECKBOX TOGGLE -->
                         <td class="p-3 text-center">
                             ${u.role === 'admin' ? '<span class="text-slate-500 italic text-[10px]">Admin Always Allowed</span>' : `
                                 <label class="inline-flex items-center cursor-pointer gap-2">
@@ -1376,7 +1345,7 @@
                 filteredDates = filteredDates.filter(d => d.startsWith(selectedMonthStr));
             }
 
-            let gross = 0, net = 0, gasCost = 0, gasLiters = 0, tips = 0, distance = 0;
+            let gross = 0, net = 0, gasCost = 0, gasLiters = 0, tips = 0, distance = 0, commissionTotal = 0;
             const weeklyGroups = {};
 
             filteredDates.sort().reverse().forEach(dateKey => {
@@ -1387,13 +1356,15 @@
                 gasLiters += item.gasLiters || 0;
                 tips += item.tip || 0;
                 distance += item.distance || 0;
+                commissionTotal += item.commVal || 0;
 
                 const mon = getMonday(new Date(dateKey)).toISOString().split('T')[0];
                 if (!weeklyGroups[mon]) {
-                    weeklyGroups[mon] = { gross: 0, gasCost: 0, netProfit: 0 };
+                    weeklyGroups[mon] = { gross: 0, gasCost: 0, commVal: 0, netProfit: 0 };
                 }
                 weeklyGroups[mon].gross += item.gross || 0;
                 weeklyGroups[mon].gasCost += item.gasCost || 0;
+                weeklyGroups[mon].commVal += item.commVal || 0;
                 weeklyGroups[mon].netProfit += item.netProfit || 0;
             });
 
@@ -1401,9 +1372,9 @@
             document.getElementById('sumNet').innerText = net.toFixed(2);
             document.getElementById('sumGasCost').innerText = gasCost.toFixed(2);
             document.getElementById('sumGasLiters').innerText = gasLiters.toFixed(1);
+            document.getElementById('sumCommissionTotal').innerText = commissionTotal.toFixed(2);
             document.getElementById('sumTips').innerText = tips.toFixed(2);
             document.getElementById('sumDistance').innerText = distance.toFixed(1);
-            document.getElementById('sumPerKm').innerText = distance > 0 ? (net / distance).toFixed(2) : '0.00';
 
             if (currentFilter === 'week') {
                 const weeklyTable = document.getElementById('weeklyReportTable');
@@ -1420,6 +1391,7 @@
                             <td class="p-2 font-medium text-slate-300">${label}</td>
                             <td class="p-2 text-white">₱${group.gross.toFixed(2)}</td>
                             <td class="p-2 text-red-400">₱${group.gasCost.toFixed(2)}</td>
+                            <td class="p-2 text-red-400">₱${group.commVal.toFixed(2)}</td>
                             <td class="p-2 text-emerald-400 font-bold">₱${group.netProfit.toFixed(2)}</td>
                         </tr>
                     `;
@@ -1430,6 +1402,7 @@
                         <td class="p-2">KABUUAN</td>
                         <td class="p-2 text-white">₱${gross.toFixed(2)}</td>
                         <td class="p-2 text-red-400">₱${gasCost.toFixed(2)}</td>
+                        <td class="p-2 text-red-400">₱${commissionTotal.toFixed(2)}</td>
                         <td class="p-2 text-emerald-400">₱${net.toFixed(2)}</td>
                     </tr>
                 `;
@@ -1451,8 +1424,8 @@
                         <td class="p-2.5 font-medium text-slate-300">${d}</td>
                         <td class="p-2.5 text-white">₱${(item.gross || 0).toFixed(2)}</td>
                         <td class="p-2.5 text-red-400">₱${(item.gasCost || 0).toFixed(2)}</td>
+                        <td class="p-2.5 text-red-400">₱${(item.commVal || 0).toFixed(2)}</td>
                         <td class="p-2.5 font-bold text-emerald-400">₱${(item.netProfit || 0).toFixed(2)}</td>
-                        <td class="p-2.5 text-slate-400">${item.distance || 0} km</td>
                         <td class="p-2.5 text-center">
                             <button onclick="deleteTrip('${d}')" class="text-red-400 hover:text-red-300 px-2 py-1 rounded">
                                 <i class="fa-solid fa-trash"></i>
