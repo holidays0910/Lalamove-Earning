@@ -420,6 +420,59 @@
                 </div>
             </div>
 
+            <!-- DAILY ACTIVE USERS (DAU) ANALYTICS REPORT SECTION -->
+            <div class="glass-card p-5 rounded-2xl space-y-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-700 pb-3">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-orange-400"></i> Daily Active Users (DAU) Logins Report
+                        </h2>
+                        <p class="text-xs text-slate-400">Suriin kung ilang beses nag-login ang mga user sa napiling hanay ng petsa.</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-800 p-2 rounded-xl border border-slate-700 text-xs">
+                        <div>
+                            <label class="block text-[10px] text-slate-400">Mula Petsa:</label>
+                            <input type="date" id="dauStartDate" onchange="renderDauReport()" class="p-1 rounded input-style text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400">Hanggang:</label>
+                            <input type="date" id="dauEndDate" onchange="renderDauReport()" class="p-1 rounded input-style text-xs">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DAU Summary Badge & Table -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-400 block">Kabuuang Logins sa Sakop na Petsa</span>
+                            <span id="dauTotalLoginsCount" class="text-2xl font-black text-orange-400">0</span>
+                        </div>
+                        <i class="fa-solid fa-right-to-bracket fa-2x text-slate-600"></i>
+                    </div>
+                    <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-400 block">Natatanging Users (Unique Users)</span>
+                            <span id="dauUniqueUsersCount" class="text-2xl font-black text-emerald-400">0</span>
+                        </div>
+                        <i class="fa-solid fa-user-check fa-2x text-slate-600"></i>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-slate-800/80 text-slate-400 border-b border-slate-700">
+                            <tr>
+                                <th class="p-2.5">Petsa (Date)</th>
+                                <th class="p-2.5">Bilang ng Logins</th>
+                                <th class="p-2.5">Mga User na Nag-login</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dauReportTable" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Users Management Table -->
             <div class="glass-card p-5 rounded-2xl space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -469,6 +522,7 @@
             doc, 
             setDoc, 
             getDoc,
+            addDoc,
             deleteDoc, 
             onSnapshot,
             serverTimestamp,
@@ -494,6 +548,7 @@
         let currentUserRole = 'user';
         let tripsData = {};
         let allUsersData = {};
+        let allLoginsData = [];
         let currentFilter = 'day';
         let gasMode = 'auto';
         let profileBase64 = '';
@@ -503,11 +558,17 @@
         let lockoutUntil = null;
         let inactivityTimer = null;
 
-        // ACCURATE LOCAL TIME DATE FIX
         const getTodayString = () => new Date().toLocaleDateString('sv-SE');
         
         document.getElementById('tripDate').value = getTodayString();
         document.getElementById('monthPicker').value = getTodayString().substring(0, 7);
+
+        // Itakda ang default DAU date range (Ngayong araw hanggang 7 araw mula ngayon)
+        const todayStr = getTodayString();
+        document.getElementById('dauStartDate').value = todayStr;
+        const nextWeekDate = new Date();
+        nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+        document.getElementById('dauEndDate').value = nextWeekDate.toLocaleDateString('sv-SE');
 
         function resetProfileUI() {
             document.getElementById('profileFullName').value = '';
@@ -541,6 +602,7 @@
                     : (isPrivacyHidden ? maskEmail(currentUser.email) : currentUser.email);
             }
             window.renderAdminUsersTable();
+            window.renderDauReport();
         };
 
         window.switchAuthMode = function(mode) {
@@ -586,7 +648,25 @@
             }, 4000);
         }
 
-        // Auth Submit
+        // Record Login Activity sa Database para sa DAU Report
+        async function recordLoginActivity(userId, userEmail) {
+            try {
+                const now = new Date();
+                const dateOnly = now.toLocaleDateString('sv-SE'); // YYYY-MM-DD
+                const timeOnly = now.toLocaleTimeString('en-GB'); // HH:MM:SS
+                
+                await addDoc(collection(db, 'login_logs'), {
+                    uid: userId,
+                    email: userEmail || 'guest@demo.local',
+                    date: dateOnly,
+                    timestamp: timeOnly,
+                    createdAt: serverTimestamp()
+                });
+            } catch (err) {
+                console.error("Login log error:", err);
+            }
+        }
+
         window.handleAuthSubmit = async function() {
             if (lockoutUntil && new Date() < lockoutUntil) {
                 const remainingSecs = Math.ceil((lockoutUntil - new Date()) / 1000);
@@ -603,8 +683,9 @@
             try {
                 await setPersistence(auth, persistence);
                 if (authMode === 'login') {
-                    await signInWithEmailAndPassword(auth, email, password);
+                    const res = await signInWithEmailAndPassword(auth, email, password);
                     failedLoginAttempts = 0;
+                    await recordLoginActivity(res.user.uid, email);
                 } else {
                     const confirmPass = document.getElementById('authConfirmPassword').value;
                     if (password !== confirmPass) return window.showAlert('Hindi magkatugma ang mga password.', true);
@@ -614,7 +695,7 @@
                     await setDoc(doc(db, 'users', userCred.user.uid), {
                         email: email,
                         role: 'user',
-                        status: 'active', // Default: Active
+                        status: 'active',
                         fullName: '',
                         phone: '',
                         dob: '',
@@ -622,6 +703,7 @@
                         isOnline: true,
                         lastSeen: serverTimestamp()
                     }, { merge: true });
+                    await recordLoginActivity(userCred.user.uid, email);
                     window.showAlert('Account successfully created!');
                 }
             } catch (err) {
@@ -659,6 +741,7 @@
                         lastSeen: serverTimestamp()
                     }, { merge: true });
                 }
+                await recordLoginActivity(res.user.uid, res.user.email);
             } catch (err) {
                 window.showAlert(err.message, true);
             }
@@ -679,6 +762,7 @@
                     isOnline: true,
                     lastSeen: serverTimestamp()
                 }, { merge: true });
+                await recordLoginActivity(res.user.uid, 'guest@demo.local');
             } catch (err) {
                 window.showAlert('Guest Sign-In Error: Siguraduhing naka-enable ang Anonymous Sign-in sa Firebase Console.', true);
             }
@@ -724,11 +808,12 @@
         window.onmousemove = resetInactivityTimer;
         window.onkeypress = resetInactivityTimer;
 
-        // Auth Observer with Strict Blocked Guard
+        // Auth Observer with Strict Blocked Guard & Realtime Remote Logout listener
         onAuthStateChanged(auth, async user => {
             if (user) {
-                // SURIIN KUNG NAKA-BLOCK ANG ACCOUNT
-                const userSnap = await getDoc(doc(db, 'users', user.uid));
+                const userRef = doc(db, 'users', user.uid);
+                const userSnap = await getDoc(userRef);
+                
                 if (userSnap.exists()) {
                     const userData = userSnap.data();
                     if (userData.status === 'blocked') {
@@ -752,7 +837,7 @@
                 const emailLabel = user.isAnonymous ? 'Guest User (Demo Mode)' : (isPrivacyHidden ? maskEmail(user.email) : user.email);
                 document.getElementById('userEmailDisplay').innerText = emailLabel;
 
-                await setDoc(doc(db, 'users', user.uid), {
+                await setDoc(userRef, {
                     email: user.isAnonymous ? 'guest@demo.local' : user.email,
                     isOnline: true,
                     lastSeen: serverTimestamp()
@@ -773,9 +858,21 @@
                 if (currentUserRole === 'admin') {
                     document.getElementById('navAdminBtn').classList.remove('hidden');
                     listenToAllUsersForAdmin();
+                    listenToLoginLogsForDAU();
                 }
 
                 listenToUserTrips();
+
+                onSnapshot(userRef, docSnap => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.forceLogout && currentUser) {
+                            alert('Pwersahang nai-logout ang iyong session ng Administrator.');
+                            window.handleLogout();
+                        }
+                    }
+                });
+
             } else {
                 currentUser = null;
                 currentUserRole = 'user';
@@ -786,7 +883,6 @@
             }
         });
 
-        // FRONT-END TAB GUARD
         window.switchTab = function(tab) {
             if (tab === 'admin' && currentUserRole !== 'admin') {
                 alert('Access Denied: Ang Admin Panel ay para lamang sa awtorisadong administrator.');
@@ -802,7 +898,6 @@
             document.getElementById('navAdminBtn').className = tab === 'admin' ? 'bg-purple-600 text-white text-xs px-3 py-2 rounded-xl font-semibold transition' : 'bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl font-semibold transition';
         };
 
-        // Profile Photo
         window.handleImageUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -888,7 +983,74 @@
             });
         }
 
-        // ADMIN TABLE WITH CHECKBOX / BLOCK ACCESS TOGGLE
+        // Pakikinig sa login logs para sa DAU Report
+        function listenToLoginLogsForDAU() {
+            const logsRef = collection(db, 'login_logs');
+            onSnapshot(logsRef, snapshot => {
+                allLoginsData = [];
+                snapshot.forEach(docSnap => {
+                    allLoginsData.push(docSnap.data());
+                });
+                window.renderDauReport();
+            });
+        }
+
+        // Render Daily Active Users Report batay sa Date Range Picker
+        window.renderDauReport = function() {
+            const startDateStr = document.getElementById('dauStartDate').value;
+            const endDateStr = document.getElementById('dauEndDate').value;
+            const tbody = document.getElementById('dauReportTable');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (!startDateStr || !endDateStr) return;
+
+            const start = new Date(startDateStr);
+            const end = new Date(endDateStr);
+
+            // Salain ang logs ayon sa napiling petsa
+            const filteredLogs = allLoginsData.filter(log => {
+                const logDate = new Date(log.date);
+                return logDate >= start && logDate <= end;
+            });
+
+            document.getElementById('dauTotalLoginsCount').innerText = filteredLogs.length;
+
+            // Grupo ayon sa araw (Date)
+            const groupedByDate = {};
+            const uniqueUsersSet = new Set();
+
+            filteredLogs.forEach(log => {
+                uniqueUsersSet.add(log.uid);
+                if (!groupedByDate[log.date]) {
+                    groupedByDate[log.date] = [];
+                }
+                groupedByDate[log.date].push(log);
+            });
+
+            document.getElementById('dauUniqueUsersCount').innerText = uniqueUsersSet.size;
+
+            const sortedDates = Object.keys(groupedByDate).sort().reverse();
+
+            if (sortedDates.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500">Walang naitalang login sa napiling petsa.</td></tr>`;
+                return;
+            }
+
+            sortedDates.forEach(dateKey => {
+                const logsOnThisDay = groupedByDate[dateKey];
+                const emailsOnThisDay = [...new Set(logsOnThisDay.map(l => isPrivacyHidden ? maskEmail(l.email) : l.email))].join(', ');
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50 transition">
+                        <td class="p-2.5 font-bold text-orange-400">${dateKey}</td>
+                        <td class="p-2.5 text-white font-semibold">${logsOnThisDay.length} logins</td>
+                        <td class="p-2.5 text-slate-300 text-[11px]">${emailsOnThisDay}</td>
+                    </tr>
+                `;
+            });
+        };
+
         window.renderAdminUsersTable = function() {
             const tbody = document.getElementById('adminUsersTable');
             if (!tbody) return;
@@ -941,6 +1103,9 @@
                         </td>
 
                         <td class="p-3 text-center space-x-1">
+                            <button onclick="adminRemoteLogout('${uid}')" title="Remote Logout (Pwersahang I-logout)" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 p-1.5 rounded-lg border border-red-500/30">
+                                <i class="fa-solid fa-power-off"></i>
+                            </button>
                             <button onclick="adminTriggerReset('${u.email}')" title="Ipadala ang Reset Password Email" class="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 p-1.5 rounded-lg border border-orange-500/30">
                                 <i class="fa-solid fa-key"></i>
                             </button>
@@ -950,7 +1115,6 @@
             });
         };
 
-        // FUNCTION PARA MAG-TOGGLE NG BLOCK STATUS SA FIRESTORE
         window.toggleUserBlockStatus = async function(targetUid, isAllowed) {
             const newStatus = isAllowed ? 'active' : 'blocked';
             try {
@@ -960,6 +1124,20 @@
                 alert(`Na-update ang status ng user sa ${newStatus.toUpperCase()}`);
             } catch (err) {
                 alert('Error sa pag-update ng status: ' + err.message);
+            }
+        };
+
+        window.adminRemoteLogout = async function(targetUid) {
+            if (confirm('Sigurado ka bang gusto mong i-force logout ang user na ito?')) {
+                try {
+                    await updateDoc(doc(db, 'users', targetUid), {
+                        forceLogout: serverTimestamp(),
+                        isOnline: false
+                    });
+                    alert('Matagumpay na na-trigger ang Remote Logout para sa user na ito.');
+                } catch (err) {
+                    alert('Error sa pag-remote logout: ' + err.message);
+                }
             }
         };
 
@@ -974,7 +1152,6 @@
             }
         };
 
-        // Gas Calculation
         window.setGasMode = function(mode) {
             gasMode = mode;
             document.getElementById('btnGasAuto').className = mode === 'auto' ? 'px-2 py-1 rounded-md bg-orange-500 text-white font-bold' : 'px-2 py-1 rounded-md text-slate-400';
