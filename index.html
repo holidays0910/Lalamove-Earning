@@ -811,7 +811,6 @@
                     await setDoc(userRef, { role: 'admin', status: 'active' }, { merge: true }).catch(() => {});
                 }
 
-                // Linisin agad ang forceLogout flag sa DB kapag matagumpay na nag-login
                 await updateDoc(userRef, {
                     forceLogout: deleteField(),
                     isOnline: true,
@@ -851,7 +850,6 @@
 
                 listenToUserTrips();
 
-                // Live Listener na may ABSOLUTE ADMIN SAFETY GUARD
                 onSnapshot(userRef, docSnap => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
